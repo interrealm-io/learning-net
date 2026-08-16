@@ -6,6 +6,7 @@
     learning-net update                                is there a newer upstream release?
     learning-net status                                what is in the mirror, how stale
     learning-net serve                                 MCP server on stdio
+    learning-net web                                   web explorer UI
     learning-net query   <tool> [k=v ...]              one-shot query, JSON out
 
 Every command takes --db PATH, on either side of the subcommand.
@@ -227,6 +228,13 @@ def cmd_serve(args):
     return 0
 
 
+def cmd_web(args):
+    from .web import web
+
+    web(_db(args), host=args.host, port=args.port, open_browser=args.open)
+    return 0
+
+
 def cmd_query(args):
     from .graph import Graph, GraphError
 
@@ -310,6 +318,12 @@ def main(argv=None):
 
     sv = sub.add_parser("serve", parents=[common], help="run the MCP server on stdio")
     sv.set_defaults(fn=cmd_serve)
+
+    w = sub.add_parser("web", parents=[common], help="web explorer UI over the mirror")
+    w.add_argument("--host", default="127.0.0.1", help="bind address (default localhost only)")
+    w.add_argument("--port", type=int, default=8788)
+    w.add_argument("--open", action="store_true", help="open a browser tab")
+    w.set_defaults(fn=cmd_web)
 
     q = sub.add_parser("query", parents=[common], help="one-shot query against the mirror")
     q.add_argument("tool")

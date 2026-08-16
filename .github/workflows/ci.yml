@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11" # oldest supported
+      - run: pip install -e ".[dev]"
+      - run: ruff check src tests
+      - run: pytest -q
+
+  # The web bundle is committed so runtime machines never need Node. This job
+  # rebuilds it and fails if the committed copy lags the web/ source.
+  bundle-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 25
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm --prefix web ci
+      - run: npm --prefix web run build
+      - name: committed bundle must match the source
+        run: |
+          if [ -n "$(git status --porcelain -- src/learningnet/static)" ]; then
+            git status -- src/learningnet/static
+            echo "web bundle is out of date — run 'make ui' and commit src/learningnet/static"
+            exit 1
+          fi

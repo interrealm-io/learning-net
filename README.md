@@ -60,6 +60,7 @@ says from what the tool inferred.
 | Framework context (ancestors, children) | — | yes |
 | Aligned curriculum | — | yes, **auto-bridged** |
 | Raw node access | — | yes |
+| Browse it in a web UI | — | yes, `learning-net web` |
 | Works offline | — | yes |
 | Runs on your hardware | — | yes |
 | Says which upstream release it is | — | yes |
@@ -128,6 +129,14 @@ Point any MCP client at it:
 
 (With the zipapp, use `"command": "python3"` and put the `.pyz` path first in `args`.)
 
+Or browse it. `learning-net web --open` serves a local explorer — full-text search,
+standard detail with prerequisites and aligned curriculum, cross-state crosswalk,
+and a status dashboard — over the **same nine queries** the MCP tools answer, so
+the two surfaces cannot disagree. Every answer that crossed the Multi-State spine
+wears a visible "inferred" badge in the UI, same as in the JSON. The UI is a
+prebuilt bundle that ships inside the package: no Node, no build step, stdlib
+Python serves it.
+
 The core has **zero dependencies** — stdlib Python only, including the MCP server. A
 school IT admin with a stock Python install can run the whole thing. Network access is
 needed only to `sync`, and even that is optional if the export arrives another way.
@@ -190,8 +199,9 @@ school's own curriculum if they put it in a mirror — is written down in
 
 ## Roadmap
 
-- **Web explorer UI** — a browsable front-end over the mirror. Next up.
 - **PyPI release** — so `uv tool install learning-net` works without a checkout.
+- **Local extension** — a school's own curriculum aligned against the shared
+  spine, in a separate table so `sync` never clobbers it.
 - **Federation tooling** — shared-spine merges across instances; the groundwork
   is in [docs/federation.md](docs/federation.md).
 

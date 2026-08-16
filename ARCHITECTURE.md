@@ -5,7 +5,7 @@
 ```
 export files ──▶ build ──▶ mirror (SQLite + FTS5) ──▶ graph.Graph ──┬──▶ MCP server (stdio)
    nodes.jsonl                 nodes / edges / meta   query layer   ├──▶ CLI
-   relationships.jsonl                                              └──▶ HTTP + web UI (planned)
+   relationships.jsonl                                              └──▶ HTTP API + web explorer
        ▲
        └── sync ── fetch + structural diff
 ```
@@ -84,6 +84,25 @@ have to know which kind of identifier it is holding.
 The v5 property is what makes federation mechanically possible; see
 [docs/federation.md](docs/federation.md).
 
+## The web explorer
+
+`learning-net web` is a stdlib `ThreadingHTTPServer` with two jobs: serve the
+nine tools as `GET /api/<tool>` — the handler table is **imported from the MCP
+server**, not reimplemented, which is what "same methods, no second
+implementation" means in practice — and serve a prebuilt React bundle as
+static files.
+
+The bundle is committed and ships as package data, read through
+`importlib.resources` so the same code serves from a wheel, an editable
+checkout, or inside the zipapp. Node exists only for people editing `web/`;
+CI rebuilds the bundle and fails if the committed copy has drifted.
+
+Each server thread opens its own read-only SQLite connection: one connection
+shared across threads breaks under the detail page's parallel requests, and
+read-only connections cost microseconds. The UI renders every bridged answer
+with an explicit "inferred via Multi-State spine" badge — the visibility rule
+above applies to pixels, not just payloads.
+
 ## Sync and drift
 
 `sync.py` separates **fetch** (needs network and credentials) from **diff** (needs
@@ -107,9 +126,6 @@ otherwise present month-old standards with total confidence.
 
 ## Planned
 
-- **HTTP API** over the same `Graph` — same methods, no second implementation.
-- **Web explorer** — search, standard detail with ancestor chain, side-by-side
-  cross-state comparison, progression walker, sync dashboard.
 - **Local extension** — a school's own curriculum aligned against the shared spine,
   in a separate table so `sync` never clobbers it.
 - **Schema proposals** — express a wanted shape change as a testable artifact against
