@@ -1,4 +1,5 @@
 import { stats, useApi } from './api'
+import { AboutPage } from './pages/AboutPage'
 import { CrosswalkPage } from './pages/CrosswalkPage'
 import { SearchPage } from './pages/SearchPage'
 import { StandardPage } from './pages/StandardPage'
@@ -10,6 +11,7 @@ function Page({ path, params }: { path: string; params: URLSearchParams }) {
     return <StandardPage id={decodeURIComponent(path.slice('/standard/'.length))} />
   if (path === '/crosswalk') return <CrosswalkPage params={params} />
   if (path === '/status') return <StatusPage />
+  if (path === '/about') return <AboutPage />
   return <SearchPage params={params} />
 }
 
@@ -37,11 +39,20 @@ export default function App() {
             </a>
           ))}
         </nav>
-        {version && (
-          <a className="version" href="#/status" title="Upstream release this mirror was built from">
-            KG v{version}
+        <span className="topbar-right">
+          <a href="#/about" aria-current={active === '/about' ? 'page' : undefined}>
+            About
           </a>
-        )}
+          {version && (
+            <a
+              className="version"
+              href="#/status"
+              title="Upstream release this mirror was built from"
+            >
+              KG v{version}
+            </a>
+          )}
+        </span>
       </header>
       <main className="container">
         <Page path={route.path} params={route.params} />
