@@ -1,5 +1,6 @@
 import { stats, useApi } from './api'
 import { AboutPage } from './pages/AboutPage'
+import { CoveragePage } from './pages/CoveragePage'
 import { CrosswalkPage } from './pages/CrosswalkPage'
 import { SearchPage } from './pages/SearchPage'
 import { StandardPage } from './pages/StandardPage'
@@ -10,6 +11,7 @@ function Page({ path, params }: { path: string; params: URLSearchParams }) {
   if (path.startsWith('/standard/'))
     return <StandardPage id={decodeURIComponent(path.slice('/standard/'.length))} />
   if (path === '/crosswalk') return <CrosswalkPage params={params} />
+  if (path === '/coverage') return <CoveragePage />
   if (path === '/status') return <StatusPage />
   // Search lived at #/ before About became the landing page; #/?q=… bookmarks
   // from then still deserve results, not a marketing page.
@@ -21,6 +23,7 @@ function Page({ path, params }: { path: string; params: URLSearchParams }) {
 const NAV: [href: string, label: string, path: string][] = [
   ['#/search', 'Search', '/search'],
   ['#/crosswalk', 'Crosswalk', '/crosswalk'],
+  ['#/coverage', 'Coverage', '/coverage'],
   ['#/status', 'Status', '/status'],
 ]
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type {
   ComponentsResult,
   ContextResult,
+  CoverageReport,
   CrosswalkResult,
   CurriculumResult,
   FindResult,
@@ -61,6 +62,9 @@ export const context = (standard: string) =>
 
 export const curriculum = (standard: string) =>
   call<CurriculumResult>('find_curriculum', { standard })
+
+export const coverageReport = (subject?: string) =>
+  call<CoverageReport>('coverage_report', { subject })
 
 // The mirror only changes on a rebuild, so stats are fetched once per page load
 // and shared by the top bar, the search filters, and the status page. A failed

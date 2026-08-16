@@ -84,3 +84,32 @@ export interface Stats {
   subjects: Record<string, number>
   snapshot?: Record<string, string>
 }
+
+export interface CoverageRow {
+  jurisdiction: string
+  standards: number
+  crosswalked: number
+  crosswalkPct: number
+  withComponents: number
+  componentsPct: number
+  withCurriculum: number
+  withProgression: number
+  isolated: boolean
+}
+
+export interface CoverageReport {
+  subject?: string
+  generatedFrom?: Record<string, string>
+  national: {
+    jurisdictions: number
+    standards: number
+    crosswalked: number
+    crosswalkPct: number
+    jurisdictionsWithNoCrosswalk: number
+    isolatedJurisdictions: string[]
+    standardsInIsolatedJurisdictions: number
+    medianCrosswalkPctWhereAny: number
+  }
+  interpretation: string
+  byJurisdiction: CoverageRow[]
+}

@@ -785,3 +785,160 @@ a.possible-card:hover {
     transition: none !important;
   }
 }
+
+/* ---- coverage (the gap map) ---- */
+
+/* Sequential ramp, one hue, light-to-dark, validated (monotone L, adjacent
+   steps >= 0.06 L apart, light end 2.24:1 on white). Isolated is a status,
+   not the bottom of the ramp: error red + "!" so hue never carries it alone. */
+.cov-b1 { background: #82b99c; color: var(--ink); }
+.cov-b2 { background: #55a07c; color: var(--ink); }
+.cov-b3 { background: #2e8160; color: #fff; }
+.cov-b4 { background: #175f45; color: #fff; }
+.cov-iso { background: var(--error); color: #fff; }
+.cov-none { background: var(--wash); color: var(--ink-2); }
+
+.cov-filter {
+  margin: 18px 0 4px;
+  color: var(--ink-2);
+}
+.cov-filter select {
+  font: inherit;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--ink);
+}
+
+.cov-map-wrap {
+  position: relative;
+}
+.cov-map {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(30px, 58px));
+  grid-auto-rows: minmax(30px, 58px);
+  gap: 3px; /* the spacer: fills never touch */
+  justify-content: start;
+  padding: 6px 0 2px;
+}
+.cov-tile {
+  border: 1px solid rgba(30, 42, 38, 0.18);
+  border-radius: 4px;
+  font: 600 12px var(--sans);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: default;
+  padding: 0;
+}
+.cov-tile:hover,
+.cov-tile:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 1px;
+}
+.cov-tile span {
+  font-weight: 700;
+}
+
+.cov-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  margin-bottom: 6px;
+}
+.cov-legend-title {
+  flex-basis: 100%;
+}
+.cov-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.cov-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(30, 42, 38, 0.18);
+  font: 700 10px/12px var(--sans);
+  font-style: normal;
+  text-align: center;
+}
+
+.cov-tooltip {
+  position: fixed;
+  transform: translate(-50%, calc(-100% - 8px));
+  background: var(--board);
+  color: var(--board-ink);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 3px 12px rgba(30, 42, 38, 0.25);
+  min-width: 170px;
+}
+.cov-tooltip b {
+  font-family: var(--serif);
+  font-size: 13.5px;
+}
+.cov-tooltip-iso {
+  display: block;
+  color: #f0b9ae;
+  font-weight: 600;
+  margin-top: 1px;
+}
+.cov-tooltip table {
+  margin-top: 5px;
+  border-collapse: collapse;
+  width: 100%;
+}
+.cov-tooltip td {
+  padding: 1px 0;
+}
+.cov-tooltip td + td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  padding-left: 14px;
+}
+
+.cov-spine {
+  margin: 18px 0;
+  padding: 12px 14px;
+  background: var(--spine-bg);
+  border: 1px solid var(--spine-line);
+  border-radius: 8px;
+  color: var(--ink);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.cov-table-wrap {
+  overflow-x: auto;
+}
+.cov-table td.mono,
+.cov-table th:not(:first-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.cov-row-iso td:first-child {
+  color: var(--error);
+}
+.cov-iso-mark {
+  font: 600 11.5px var(--sans);
+}
+
+@media (max-width: 640px) {
+  .cov-map {
+    grid-template-columns: repeat(11, 1fr);
+    grid-auto-rows: 32px;
+  }
+  .cov-tile {
+    font-size: 10px;
+  }
+}
