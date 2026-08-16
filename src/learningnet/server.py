@@ -279,7 +279,7 @@ def serve(db_path=None):
             continue
         try:
             resp = _handle(req, handlers)
-        except Exception as e:  # never die on one bad request
+        except Exception as e:  # noqa: BLE001 — one bad request must never kill the server
             resp = {
                 "jsonrpc": "2.0",
                 "id": req.get("id"),

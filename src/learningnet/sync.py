@@ -77,7 +77,7 @@ def fetch(dest, version=DEFAULT_VERSION, base=CDN_BASE, log=print, chunk=1 << 20
         path = os.path.join(dest, name)
         req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
         try:
-            with urllib.request.urlopen(req) as r:  # noqa: S310 - fixed https CDN
+            with urllib.request.urlopen(req) as r:  # fixed https CDN
                 total = int(r.headers.get("Content-Length") or 0)
                 done = 0
                 with open(path, "wb") as fh:
@@ -121,7 +121,7 @@ def _exists(version, base=CDN_BASE, timeout=15):
     ):
         req = urllib.request.Request(url, method=method, headers=headers)
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310
+            with urllib.request.urlopen(req, timeout=timeout) as r:
                 status = getattr(r, "status", None)
                 return status is None or 200 <= status < 400
         except urllib.error.HTTPError as e:
