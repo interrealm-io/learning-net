@@ -63,9 +63,14 @@ export const curriculum = (standard: string) =>
   call<CurriculumResult>('find_curriculum', { standard })
 
 // The mirror only changes on a rebuild, so stats are fetched once per page load
-// and shared by the top bar, the search filters, and the status page.
+// and shared by the top bar, the search filters, and the status page. A failed
+// fetch clears the memo so a transient outage doesn't poison the whole session.
 let statsPromise: Promise<Stats> | undefined
-export const stats = () => (statsPromise ??= call<Stats>('graph_stats'))
+export const stats = () =>
+  (statsPromise ??= call<Stats>('graph_stats').catch((e: Error) => {
+    statsPromise = undefined
+    throw e
+  }))
 
 export interface Fetched<T> {
   data?: T

@@ -229,9 +229,14 @@ def cmd_serve(args):
 
 
 def cmd_web(args):
+    from .graph import GraphError
     from .web import web
 
-    web(_db(args), host=args.host, port=args.port, open_browser=args.open)
+    try:
+        web(_db(args), host=args.host, port=args.port, open_browser=args.open)
+    except GraphError as e:
+        print(e, file=sys.stderr)
+        return 2
     return 0
 
 

@@ -34,7 +34,9 @@ def _coerce(query_string):
     out = {}
     for k, vals in parse_qs(query_string).items():
         v = vals[-1]
-        out[k] = int(v) if k in _INT_PARAMS and v.isdigit() else v
+        # Strict: a bad int (limit=1.5, limit=abc) raises ValueError here and
+        # becomes a 400 in _api, instead of reaching SQL as a string.
+        out[k] = int(v) if k in _INT_PARAMS else v
     return out
 
 
@@ -60,6 +62,12 @@ class _ThreadGraphs:
 
 class _Handler(BaseHTTPRequestHandler):
     graphs = None  # bound per-server in make_server
+
+    # Keep-alive matters here: ThreadingHTTPServer threads live per connection,
+    # so without it every request would open a fresh sqlite connection and the
+    # per-thread cache in _ThreadGraphs would never get a second hit.
+    # (_send always sets Content-Length, which HTTP/1.1 requires.)
+    protocol_version = "HTTP/1.1"
 
     def log_message(self, fmt, *args):
         pass  # the CLI prints the URL; per-request logging is noise for a kiosk
@@ -98,7 +106,9 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _static(self, path):
         parts = [p for p in path.split("/") if p and p != "."]
-        if ".." in parts:
+        # ".." covers POSIX; the backslash check covers Windows, where
+        # pathlib's joinpath splits on "\" and "..\..\x" would escape.
+        if any(p == ".." or "\\" in p for p in parts):
             self._send(404, b"not found", "text/plain")
             return
         root = resources.files("learningnet") / "static"

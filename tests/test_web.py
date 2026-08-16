@@ -66,6 +66,29 @@ def test_unexpected_param_is_400_not_crash(served):
     assert e.value.code == 400
 
 
+def test_bad_int_param_is_400_not_crash(served):
+    """limit=1.5 once reached SQL as a string and killed the thread with an
+    uncaught sqlite3.IntegrityError instead of answering 400."""
+    for bad in ("1.5", "abc"):
+        with pytest.raises(urllib.error.HTTPError) as e:
+            _get(f"{served}/api/find_standard?statementCode=4.OA.A.3&limit={bad}")
+        assert e.value.code == 400
+
+
+def test_backslash_traversal_is_refused(served):
+    """Windows pathlib splits joinpath args on backslashes too."""
+    import http.client
+
+    host, port = served.removeprefix("http://").split(":")
+    conn = http.client.HTTPConnection(host, int(port))
+    conn.request("GET", "/..%5c..%5cpyproject.toml".replace("%5c", "\\"))
+    resp = conn.getresponse()
+    body = resp.read()
+    conn.close()
+    assert resp.status == 404
+    assert b"[project]" not in body
+
+
 def test_concurrent_requests_do_not_break_sqlite(served):
     """The detail page fires five fetches at once; a shared connection across
     server threads raised sqlite3.InterfaceError. Regression for that."""

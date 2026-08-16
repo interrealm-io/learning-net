@@ -42,13 +42,7 @@ export function CrosswalkPage({ params }: { params: URLSearchParams }) {
         comparison is a two-hop walk, and this page always says when it took one.
       </p>
 
-      {/* Uncontrolled selects apply defaultValue only on mount, so the form
-          remounts when the option list arrives, not just when params change. */}
-      <form
-        className="searchbar"
-        key={`${params.toString()}|${jurisdictions.length}`}
-        onSubmit={onSubmit}
-      >
+      <form className="searchbar" key={params.toString()} onSubmit={onSubmit}>
         <input
           name="standard"
           type="search"
@@ -56,7 +50,14 @@ export function CrosswalkPage({ params }: { params: URLSearchParams }) {
           placeholder="Standard code, e.g. 4.OA.A.3"
           aria-label="Standard to compare"
         />
-        <select name="to" defaultValue={to} aria-label="Compare to jurisdiction">
+        {/* Keyed by option count: remounts when stats arrive so defaultValue
+            applies, without remounting the form and wiping typed input. */}
+        <select
+          name="to"
+          key={jurisdictions.length}
+          defaultValue={to}
+          aria-label="Compare to jurisdiction"
+        >
           <option value="">Every jurisdiction</option>
           {jurisdictions.map((j) => (
             <option key={j}>{j}</option>

@@ -59,13 +59,7 @@ export function SearchPage({ params }: { params: URLSearchParams }) {
         — search by topic, wording, or code.
       </p>
 
-      {/* Uncontrolled selects apply defaultValue only on mount, so the form
-          remounts when the option list arrives, not just when params change. */}
-      <form
-        className="searchbar"
-        key={`${params.toString()}|${jurisdictions.length}`}
-        onSubmit={onSubmit}
-      >
+      <form className="searchbar" key={params.toString()} onSubmit={onSubmit}>
         <input
           name="q"
           type="search"
@@ -74,13 +68,21 @@ export function SearchPage({ params }: { params: URLSearchParams }) {
           aria-label="Search standards"
           autoFocus
         />
-        <select name="jurisdiction" defaultValue={jurisdiction} aria-label="Jurisdiction">
+        {/* Uncontrolled selects apply defaultValue only on mount; keying each
+            select by its option count remounts it when stats arrive — without
+            remounting the form, which would wipe in-progress typing. */}
+        <select
+          name="jurisdiction"
+          key={jurisdictions.length}
+          defaultValue={jurisdiction}
+          aria-label="Jurisdiction"
+        >
           <option value="">All jurisdictions</option>
           {jurisdictions.map((j) => (
             <option key={j}>{j}</option>
           ))}
         </select>
-        <select name="subject" defaultValue={subject} aria-label="Subject">
+        <select name="subject" key={subjects.length} defaultValue={subject} aria-label="Subject">
           <option value="">All subjects</option>
           {subjects.map((s) => (
             <option key={s}>{s}</option>
