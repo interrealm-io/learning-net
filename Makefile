@@ -1,7 +1,7 @@
 DB ?= data/kg.sqlite
 EXPORT ?= $(HOME)/Downloads
 
-.PHONY: help install test lint build pyz status serve sync check clean
+.PHONY: help install test lint build pyz status serve web ui sync check clean
 
 help:
 	@grep -E '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-10s %s\n",$$1,$$2}'
@@ -40,6 +40,12 @@ status:  ## what is in the mirror and how stale it is
 
 serve:  ## MCP server on stdio
 	learning-net serve --db $(DB)
+
+web:  ## web explorer UI   make web DB=data/kg.sqlite
+	learning-net web --db $(DB) --open
+
+ui:  ## rebuild the web bundle into the package (Node needed here, and only here)
+	cd web && npm install && npm run build
 
 clean:
 	rm -rf build dist *.egg-info .pytest_cache .ruff_cache

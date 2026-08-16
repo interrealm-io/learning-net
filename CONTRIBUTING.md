@@ -33,9 +33,25 @@ payload — `bridgedViaMultiState`, `viaMultiStateHub`, or an equivalent flag. A
 must always be able to separate what the data states from what the tool inferred.
 Silent inference is the bug class this project is most exposed to.
 
+## Working on the web UI
+
+The explorer's source lives in `web/` (Vite + React + TypeScript). The built
+bundle is **committed** at `src/learningnet/static/` so runtime machines never
+need Node — which means UI changes are a two-step:
+
+```bash
+make ui        # npm install + build into src/learningnet/static
+git add web src/learningnet/static
+```
+
+CI rebuilds the bundle and fails the PR if the committed copy doesn't match
+the source. `npm run dev` inside `web/` gives hot reload, proxying `/api` to a
+`learning-net web` server on port 8788.
+
 ## No dependencies in the core
 
-`graph.py`, `build.py`, `server.py`, and `cli.py` are stdlib-only and stay that way.
+`graph.py`, `build.py`, `server.py`, `web.py`, and `cli.py` are stdlib-only and
+stay that way.
 A school IT admin with a stock Python install must be able to run the mirror and the
 MCP server. Network, web, and dev tooling live behind optional extras.
 
