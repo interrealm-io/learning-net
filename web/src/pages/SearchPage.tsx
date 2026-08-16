@@ -17,7 +17,7 @@ function onSubmit(e: FormEvent<HTMLFormElement>) {
     const v = String(f.get(k) ?? '').trim()
     if (v) qs.set(k, v)
   }
-  navigate(`/?${qs}`)
+  navigate(`/search?${qs}`)
 }
 
 export function SearchPage({ params }: { params: URLSearchParams }) {
@@ -73,7 +73,7 @@ export function SearchPage({ params }: { params: URLSearchParams }) {
             remounting the form, which would wipe in-progress typing. */}
         <select
           name="jurisdiction"
-          key={jurisdictions.length}
+          key={`j${jurisdictions.length}`}
           defaultValue={jurisdiction}
           aria-label="Jurisdiction"
         >
@@ -82,7 +82,7 @@ export function SearchPage({ params }: { params: URLSearchParams }) {
             <option key={j}>{j}</option>
           ))}
         </select>
-        <select name="subject" key={subjects.length} defaultValue={subject} aria-label="Subject">
+        <select name="subject" key={`s${subjects.length}`} defaultValue={subject} aria-label="Subject">
           <option value="">All subjects</option>
           {subjects.map((s) => (
             <option key={s}>{s}</option>
@@ -107,7 +107,7 @@ export function SearchPage({ params }: { params: URLSearchParams }) {
           {['fractions', 'photosynthesis', '4.OA.A.3'].map((ex, i) => (
             <span key={ex}>
               {i > 0 && ' · '}
-              <a href={`#/?q=${encodeURIComponent(ex)}`}>{ex}</a>
+              <a href={`#/search?q=${encodeURIComponent(ex)}`}>{ex}</a>
             </span>
           ))}
         </p>

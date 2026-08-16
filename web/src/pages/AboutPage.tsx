@@ -49,7 +49,7 @@ const FACTS = [
 
 const UNLOCKS = [
   {
-    href: '#/?q=fractions',
+    href: '#/search?q=fractions',
     title: 'A classroom that works offline',
     body: 'The whole graph is a file on your hardware. No rate limit, no network round-trip, no dependence on anyone else’s server being up during first period.',
   },
@@ -162,7 +162,7 @@ export function AboutPage() {
       </section>
 
       <div className="about-cta">
-        <a className="button" href="#/">Search the graph</a>
+        <a className="button" href="#/search">Search the graph</a>
         <a className="button button-quiet" href="#/crosswalk?standard=4.OA.A.3&to=Texas">
           Try the crosswalk
         </a>
