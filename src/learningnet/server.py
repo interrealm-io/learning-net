@@ -4,7 +4,7 @@ Speaks MCP over stdio with nothing but the standard library — no SDK, no pip
 install, no network. That constraint is deliberate: the point of a mirror is
 that a school can run it on hardware and a Python install it already has.
 
-All nine tools are thin wrappers over `graph.Graph`. The HTTP API serves the
+All eleven tools are thin wrappers over `graph.Graph`. The HTTP API serves the
 same methods, so the two surfaces cannot drift.
 """
 
@@ -38,6 +38,55 @@ TOOLS = [
             "Call first to see what is available and how current it is."
         ),
         "inputSchema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "verify_alignment_claim",
+        "description": (
+            "Check whether an alignment claim is addressable in a specific jurisdiction. "
+            "Use this whenever anyone asserts that material, a lesson, a product, or AI "
+            "output is 'aligned to' a standard code for a particular state. Standard codes "
+            "are NOT unique across jurisdictions and many states never adopted the "
+            "Common Core codes at all, so a claim of alignment to e.g. '4.OA.A.3' names "
+            "nothing real in Texas. Returns a verdict — addressable, equivalent_exists, "
+            "not_addressable, unknown_code, unknown_jurisdiction — with a plain-language "
+            "explanation suitable for a district administrator, plus the local equivalent "
+            "standards to ask the vendor to restate against."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "statementCode": {
+                    "type": "string",
+                    "description": "The standard code being claimed, e.g. '4.OA.A.3'",
+                },
+                "jurisdiction": {
+                    "type": "string",
+                    "description": "The state or territory the claim is being made to, e.g. 'Texas'",
+                },
+                "subject": {"type": "string"},
+            },
+            "required": ["statementCode", "jurisdiction"],
+        },
+    },
+    {
+        "name": "coverage_report",
+        "description": (
+            "Measure how much of each jurisdiction's curriculum is actually CONNECTED — "
+            "how many of its standards carry cross-jurisdiction alignments, learning "
+            "components, aligned curriculum, or progressions. Use this to answer 'can "
+            "alignment claims be verified for my state at all?' and to see where the "
+            "graph's connective tissue is missing. Nobody publishes this measurement, "
+            "including upstream. Reports worst-covered jurisdictions first."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "subject": {
+                    "type": "string",
+                    "description": "Optional: restrict to one subject, e.g. 'Mathematics'",
+                }
+            },
+        },
     },
     {
         "name": "find_standard",
@@ -179,6 +228,10 @@ TOOLS = [
 def _handlers(g: Graph):
     return {
         "graph_stats": lambda: g.stats(),
+        "verify_alignment_claim": lambda statementCode, jurisdiction, subject=None: (
+            g.verify_alignment_claim(statementCode, jurisdiction, subject)
+        ),
+        "coverage_report": lambda subject=None: g.coverage_report(subject),
         "find_standard": lambda statementCode, jurisdiction=None, subject=None, limit=25: (
             g.find_standard(statementCode, jurisdiction, subject, limit)
         ),

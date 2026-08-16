@@ -4,6 +4,7 @@
     learning-net build   <export-dir>                  build a mirror from a local export
     learning-net sync    [--version V] [--check]       fetch, diff, report, rebuild
     learning-net update                                is there a newer upstream release?
+    learning-net coverage [--csv f]                    alignment gap map by jurisdiction
     learning-net status                                what is in the mirror, how stale
     learning-net serve                                 MCP server on stdio
     learning-net web                                   web explorer UI
@@ -195,6 +196,55 @@ def cmd_sync(args):
     return 0
 
 
+def cmd_coverage(args):
+    """The alignment-coverage report — the gap map nobody publishes."""
+    import csv
+
+    from .graph import Graph, GraphError
+
+    try:
+        g = Graph(_db(args))
+    except GraphError as e:
+        print(e, file=sys.stderr)
+        return 2
+    rep = g.coverage_report(args.subject)
+    nat, rows = rep["national"], rep["byJurisdiction"]
+    snap = rep.get("generatedFrom") or {}
+
+    print(f"  Learning Commons KG v{snap.get('kgVersion', '?')} — alignment coverage")
+    if args.subject:
+        print(f"  subject: {args.subject}")
+    print()
+    print(f"  {nat['standards']:,} standards across {nat['jurisdictions']} jurisdictions")
+    print(f"  {nat['crosswalked']:,} carry a cross-jurisdiction alignment "
+          f"({nat['crosswalkPct']}%)")
+    print(f"  {nat['jurisdictionsWithNoCrosswalk']} jurisdictions have NONE — "
+          f"{nat['standardsInIsolatedJurisdictions']:,} standards unverifiable\n")
+
+    print(f"  {'jurisdiction':<22}{'standards':>10}{'crosswalk':>11}{'components':>12}"
+          f"{'curriculum':>12}{'progression':>13}")
+    print("  " + "-" * 78)
+    for r in rows:
+        mark = "  !" if r["isolated"] else "   "
+        print(f"  {r['jurisdiction']:<22}{r['standards']:>10,}"
+              f"{r['crosswalkPct']:>10.1f}%{r['componentsPct']:>11.1f}%"
+              f"{r['withCurriculum']:>12,}{r['withProgression']:>13,}{mark}")
+    print("\n  ! = no alignment edges at all; claims cannot be verified in either direction")
+
+    if args.json:
+        with open(os.path.expanduser(args.json), "w", encoding="utf-8") as fh:
+            json.dump(rep, fh, indent=1)
+        print(f"\n  json written to {args.json}")
+    if args.csv:
+        with open(os.path.expanduser(args.csv), "w", encoding="utf-8", newline="") as fh:
+            w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
+            w.writeheader()
+            w.writerows(rows)
+        print(f"  csv written to {args.csv}")
+    g.close()
+    return 0
+
+
 def cmd_status(args):
     from .graph import Graph, GraphError
 
@@ -262,6 +312,8 @@ def cmd_query(args):
         "components": g.learning_components,
         "progression": g.progression,
         "crosswalk": g.crosswalk,
+        "verify": g.verify_alignment_claim,
+        "coverage": g.coverage_report,
         "context": g.context,
         "curriculum": g.curriculum,
         "node": g.node,
@@ -315,6 +367,15 @@ def main(argv=None):
 
     u = sub.add_parser("update", parents=[common], help="probe for a newer upstream release")
     u.set_defaults(fn=cmd_update)
+
+    cv = sub.add_parser(
+        "coverage", parents=[common], help="alignment-coverage report by jurisdiction"
+    )
+    cv.add_argument("--subject", help="restrict to one subject")
+    cv.add_argument("--json", help="also write the full report to this JSON path")
+    cv.add_argument("--csv", help="also write the per-jurisdiction table to this CSV path")
+    cv.set_defaults(fn=cmd_coverage)
+
 
     st = sub.add_parser(
         "status", parents=[common], help="what is in the mirror and how stale it is"

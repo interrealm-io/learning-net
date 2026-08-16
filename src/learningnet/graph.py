@@ -28,6 +28,7 @@ inference from ground truth.
 
 from __future__ import annotations
 
+import collections
 import json
 import re
 import sqlite3
@@ -300,6 +301,134 @@ class Graph:
             "alignedStandards": [_brief(a) for a in al[:limit]],
         }
 
+    def resolve_jurisdiction(self, name):
+        """Match a jurisdiction name loosely. Returns (canonical, suggestions)."""
+        if not name:
+            return None, []
+        known = self.jurisdictions()
+        lowered = {j.lower(): j for j in known}
+        if name.lower() in lowered:
+            return lowered[name.lower()], []
+        near = [j for j in known if name.lower() in j.lower() or j.lower() in name.lower()]
+        return None, near[:5] or known[:8]
+
+    def verify_alignment_claim(self, statement_code, jurisdiction, subject=None):
+        """Is an alignment claim addressable in a given jurisdiction?
+
+        This is the question nobody can currently answer, and it is the reason
+        "standards-aligned" functions as marketing rather than as a checkable
+        assertion. A vendor says its material aligns to `4.OA.A.3`. A Texas
+        district has no way to discover that Texas never adopted that code —
+        the standard it names does not exist in the curriculum the district is
+        legally accountable to.
+
+        The check itself is trivial once the graph is local. It is only hard
+        because it requires knowing that codes are not unique across
+        jurisdictions, and that is exactly the knowledge the person asking does
+        not have. So the tool encodes it and answers in plain language.
+
+        Verdicts:
+          addressable            the code exists in that jurisdiction
+          equivalent_exists      it does not, but an aligned local standard does
+          not_addressable        it does not, and nothing local aligns to it
+          unknown_code           the code is not in the graph at all
+          unknown_jurisdiction   the jurisdiction name was not recognised
+        """
+        canon, suggestions = self.resolve_jurisdiction(jurisdiction)
+        if not canon:
+            return {
+                "claim": {"statementCode": statement_code, "jurisdiction": jurisdiction},
+                "verdict": "unknown_jurisdiction",
+                "plainLanguage": (
+                    f"{jurisdiction!r} is not a jurisdiction in this mirror. "
+                    f"Did you mean one of: {', '.join(suggestions)}?"
+                ),
+                "suggestions": suggestions,
+            }
+
+        sql = f"SELECT {NODE_COLS} FROM nodes WHERE statement_code = ?"
+        params = [statement_code]
+        if subject:
+            sql += " AND subject = ?"
+            params.append(subject)
+        matches = self._rows(sql, params)
+
+        if not matches:
+            return {
+                "claim": {"statementCode": statement_code, "jurisdiction": canon},
+                "verdict": "unknown_code",
+                "plainLanguage": (
+                    f"No standard with the code {statement_code!r} exists anywhere in this "
+                    f"mirror, in any of the {len(self.jurisdictions())} jurisdictions it "
+                    f"covers. The claim cannot be checked because the code it cites is not "
+                    f"a real standard code. Try search_standards to find what was meant."
+                ),
+            }
+
+        defined_in = sorted({m["jurisdiction"] for m in matches if m["jurisdiction"]})
+        exact = [m for m in matches if m["jurisdiction"] == canon]
+
+        if exact:
+            return {
+                "claim": {"statementCode": statement_code, "jurisdiction": canon},
+                "verdict": "addressable",
+                "plainLanguage": (
+                    f"Verified. {statement_code} is a real standard in {canon}, so material "
+                    f"claiming alignment to it is making a checkable claim about this "
+                    f"jurisdiction's curriculum."
+                ),
+                "standard": _brief(exact[0]),
+                "alsoDefinedIn": [j for j in defined_in if j != canon][:25],
+                "definedInCount": len(defined_in),
+            }
+
+        # The code is real, but not in this jurisdiction. Bridge to a local
+        # equivalent through the Multi-State spine.
+        anchor = next((m for m in matches if m["jurisdiction"] == MULTI_STATE), matches[0])
+        cross = self.crosswalk(anchor["id"], to_jurisdiction=canon)
+        equivalents = cross["alignedStandards"]
+        common_core = MULTI_STATE in defined_in
+
+        if equivalents:
+            return {
+                "claim": {"statementCode": statement_code, "jurisdiction": canon},
+                "verdict": "equivalent_exists",
+                "plainLanguage": (
+                    f"{statement_code} is NOT a standard in {canon}"
+                    + (
+                        " — it is a Multi-State (Common Core / NGSS) code, which "
+                        f"{canon} did not adopt under that identifier. "
+                        if common_core
+                        else f", though it is used in {len(defined_in)} other jurisdiction(s). "
+                    )
+                    + f"Material citing it is not naming anything in {canon}'s curriculum. "
+                    f"The closest {canon} standard(s) covering the same content: "
+                    + ", ".join(
+                        e.get("statementCode") or e["id"][:8] for e in equivalents[:5]
+                    )
+                    + ". Ask the vendor to restate the alignment using those codes."
+                ),
+                "citedStandard": _brief(anchor),
+                "localEquivalents": equivalents[:10],
+                "bridgedViaMultiState": cross["viaMultiStateHub"],
+                "definedIn": defined_in[:25],
+            }
+
+        return {
+            "claim": {"statementCode": statement_code, "jurisdiction": canon},
+            "verdict": "not_addressable",
+            "plainLanguage": (
+                f"{statement_code} is NOT a standard in {canon}, and no {canon} standard "
+                f"is aligned to it in this graph. It is defined in: "
+                f"{', '.join(defined_in[:8])}. A claim of alignment to this code says "
+                f"nothing verifiable about {canon}'s curriculum. Note that absence of an "
+                f"alignment edge is not proof the content is unrelated — only that no "
+                f"published alignment exists to check against."
+            ),
+            "citedStandard": _brief(anchor),
+            "definedIn": defined_in[:25],
+        }
+
     def context(self, standard, max_depth=6, child_limit=40):
         n = self._one(standard)
         ancestors, cur = [], n["id"]
@@ -365,6 +494,135 @@ class Graph:
                 }
                 for i in items
             ],
+        }
+
+    def _ids_by_jurisdiction(self, sql, params=()):
+        """Collect {jurisdiction: {standard ids}} for an edge-participation query."""
+        out = collections.defaultdict(set)
+        for j, i in self._rows(sql, params):
+            if j:
+                out[j].add(i)
+        return out
+
+    def coverage_report(self, subject=None):
+        """How much of each jurisdiction's curriculum is actually connected.
+
+        The alignment layer is what makes a cross-jurisdiction claim checkable
+        at all. Publishing 258,000 standards is only half of it — if a state's
+        standards carry no alignment edges, then for that state no alignment
+        claim can be verified in either direction, and no amount of local
+        tooling fixes that.
+
+        Nobody currently publishes this measurement, including upstream. It is
+        the most useful thing a mirror can compute and hand back: not a
+        criticism, a work list.
+
+        Four independent dimensions, each reported as "how many of this
+        jurisdiction's standards participate in this kind of edge at all":
+
+          crosswalk    hasStandardAlignment  -> can this be translated?
+          components   supports              -> is it broken into teachable skills?
+          curriculum   hasEducationalAlignment -> is there material aligned to it?
+          progression  buildsTowards         -> does it have prerequisites?
+        """
+        where = " WHERE label='StandardsFrameworkItem'"
+        params = []
+        if subject:
+            where += " AND subject = ?"
+            params.append(subject)
+
+        totals = {
+            j: n
+            for j, n in self._rows(
+                f"SELECT jurisdiction, COUNT(*) FROM nodes{where} "
+                "AND jurisdiction IS NOT NULL GROUP BY 1",
+                params,
+            )
+        }
+
+        subj_filter = " AND n.subject = ?" if subject else ""
+        sp = [subject] if subject else []
+
+        def both_directions(label):
+            return self._ids_by_jurisdiction(
+                "SELECT n.jurisdiction, n.id FROM edges e JOIN nodes n ON n.id = e.src "
+                f"WHERE e.label = ? AND n.label='StandardsFrameworkItem'{subj_filter} "
+                "UNION "
+                "SELECT n.jurisdiction, n.id FROM edges e JOIN nodes n ON n.id = e.dst "
+                f"WHERE e.label = ? AND n.label='StandardsFrameworkItem'{subj_filter}",
+                [label, *sp, label, *sp],
+            )
+
+        def incoming(label, src_label=None):
+            sql = (
+                "SELECT n.jurisdiction, n.id FROM edges e JOIN nodes n ON n.id = e.dst "
+                f"WHERE e.label = ? AND n.label='StandardsFrameworkItem'{subj_filter}"
+            )
+            p = [label, *sp]
+            if src_label:
+                sql += " AND e.src_label = ?"
+                p.append(src_label)
+            return self._ids_by_jurisdiction(sql, p)
+
+        crosswalk = both_directions("hasStandardAlignment")
+        progression = both_directions("buildsTowards")
+        components = incoming("supports", "LearningComponent")
+        curriculum = incoming("hasEducationalAlignment")
+
+        def pct(n, d):
+            return round(100 * n / d, 1) if d else 0.0
+
+        rows_out = []
+        for j, total in totals.items():
+            c, k = len(crosswalk.get(j, ())), len(components.get(j, ()))
+            cu, pr = len(curriculum.get(j, ())), len(progression.get(j, ()))
+            rows_out.append(
+                {
+                    "jurisdiction": j,
+                    "standards": total,
+                    "crosswalked": c,
+                    "crosswalkPct": pct(c, total),
+                    "withComponents": k,
+                    "componentsPct": pct(k, total),
+                    "withCurriculum": cu,
+                    "withProgression": pr,
+                    "isolated": c == 0,
+                }
+            )
+        rows_out.sort(key=lambda r: (r["crosswalkPct"], -r["standards"]))
+
+        isolated = [r["jurisdiction"] for r in rows_out if r["isolated"]]
+        total_standards = sum(totals.values())
+        total_crosswalked = sum(len(v) for v in crosswalk.values())
+        covered = [r["crosswalkPct"] for r in rows_out if not r["isolated"]]
+
+        return {
+            "subject": subject,
+            "generatedFrom": self.snapshot_info(),
+            "national": {
+                "jurisdictions": len(totals),
+                "standards": total_standards,
+                "crosswalked": total_crosswalked,
+                "crosswalkPct": pct(total_crosswalked, total_standards),
+                "jurisdictionsWithNoCrosswalk": len(isolated),
+                "isolatedJurisdictions": isolated,
+                "standardsInIsolatedJurisdictions": sum(
+                    r["standards"] for r in rows_out if r["isolated"]
+                ),
+                "medianCrosswalkPctWhereAny": (
+                    round(sorted(covered)[len(covered) // 2], 1) if covered else 0.0
+                ),
+            },
+            "interpretation": (
+                f"{len(isolated)} of {len(totals)} jurisdictions have no alignment edges at "
+                f"all, covering {sum(r['standards'] for r in rows_out if r['isolated']):,} "
+                f"standards. For those, an alignment claim cannot be verified in either "
+                f"direction. Across jurisdictions that do have alignment, coverage is thin — "
+                f"only {pct(total_crosswalked, total_standards)}% of all standards carry one. "
+                f"This measures the alignment layer, not the standards themselves, which are "
+                f"complete."
+            ),
+            "byJurisdiction": rows_out,
         }
 
     def node(self, ref):

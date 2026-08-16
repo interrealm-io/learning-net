@@ -209,3 +209,84 @@ def test_interrupted_build_does_not_corrupt_the_live_mirror(tmp_path, fake_cdn, 
 
     assert db.read_bytes() == before, "live mirror was modified by a failed build"
     assert Graph(str(db)).stats()["snapshot"]["kgVersion"] == "1.12.0"
+
+
+# -- verify_alignment_claim -------------------------------------------------
+
+
+def test_claim_addressable_when_code_exists_in_jurisdiction(mirror):
+    r = mirror.verify_alignment_claim("4.OA.A.3", "California")
+    assert r["verdict"] == "addressable"
+    assert "Verified" in r["plainLanguage"]
+
+
+def test_claim_not_addressable_in_texas_but_equivalent_found(mirror):
+    """The flagship case: Texas never adopted the Common Core code."""
+    r = mirror.verify_alignment_claim("4.OA.A.3", "Texas")
+    assert r["verdict"] == "equivalent_exists"
+    assert "NOT a standard in Texas" in r["plainLanguage"]
+    assert [e["statementCode"] for e in r["localEquivalents"]] == ["111.6.b.5.A"]
+
+
+def test_unknown_code_is_reported_as_uncheckable(mirror):
+    r = mirror.verify_alignment_claim("9.ZZ.99", "Texas")
+    assert r["verdict"] == "unknown_code"
+
+
+def test_jurisdiction_name_is_matched_loosely(mirror):
+    assert mirror.verify_alignment_claim("4.OA.A.3", "california")["verdict"] == "addressable"
+
+
+def test_bad_jurisdiction_suggests_rather_than_erroring(mirror):
+    r = mirror.verify_alignment_claim("4.OA.A.3", "Texass")
+    assert r["verdict"] in ("unknown_jurisdiction", "equivalent_exists")
+
+
+def test_verify_is_exposed_as_an_mcp_tool():
+    from learningnet.server import TOOLS
+
+    names = [t["name"] for t in TOOLS]
+    assert "verify_alignment_claim" in names
+    schema = next(t for t in TOOLS if t["name"] == "verify_alignment_claim")["inputSchema"]
+    assert schema["required"] == ["statementCode", "jurisdiction"]
+
+
+# -- coverage_report --------------------------------------------------------
+
+
+def test_coverage_flags_jurisdictions_with_no_alignment(mirror):
+    """A state with standards but no alignment edges is the finding that matters."""
+    rep = mirror.coverage_report()
+    by = {r["jurisdiction"]: r for r in rep["byJurisdiction"]}
+    assert by["California"]["crosswalked"] == 1
+    assert by["California"]["isolated"] is False
+    assert rep["national"]["jurisdictions"] == 3
+
+
+def test_coverage_sorts_worst_first(mirror):
+    rep = mirror.coverage_report()
+    pcts = [r["crosswalkPct"] for r in rep["byJurisdiction"]]
+    assert pcts == sorted(pcts)
+
+
+def test_coverage_counts_all_four_dimensions(mirror):
+    by = {r["jurisdiction"]: r for r in mirror.coverage_report()["byJurisdiction"]}
+    ca = by["California"]
+    assert ca["withComponents"] == 1        # lc-1 supports ca-1
+    assert by["Multi-State"]["withCurriculum"] == 1   # les-1 aligns to ms-1
+    assert by["Multi-State"]["withProgression"] == 2  # ms-0 buildsTowards ms-1
+
+
+def test_coverage_subject_filter(mirror):
+    assert mirror.coverage_report(subject="Mathematics")["national"]["standards"] == 4
+    assert mirror.coverage_report(subject="Science")["national"]["standards"] == 0
+
+
+def test_coverage_carries_provenance(mirror):
+    assert mirror.coverage_report()["generatedFrom"]["source"] == "test"
+
+
+def test_coverage_is_an_mcp_tool():
+    from learningnet.server import TOOLS
+
+    assert "coverage_report" in [t["name"] for t in TOOLS]
