@@ -1,0 +1,25 @@
+# data — never commit the mirror or the export
+*.sqlite
+*.sqlite-*
+*.jsonl
+data/
+snapshots/
+
+# build artifacts (zipapp staging + output)
+build/
+dist/
+uv.lock
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# editors / os
+.DS_Store
+.idea/
+.vscode/

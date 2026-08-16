@@ -1,0 +1,41 @@
+[project]
+name = "learning-net"
+version = "0.1.0"
+description = "A self-hostable mirror, MCP server, and explorer for the Learning Commons Knowledge Graph"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [{ name = "InterRealm Foundation" }]
+keywords = ["education", "knowledge-graph", "mcp", "standards", "curriculum"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Education",
+  "License :: OSI Approved :: Apache Software License",
+  "Topic :: Education",
+]
+
+# NO dependencies, anywhere in the core path. Upstream publishes exports on a
+# public CDN with no credential, so even sync is stdlib urllib. A school IT
+# admin with a stock Python install can run the whole thing. See ARCHITECTURE.md.
+dependencies = []
+
+[project.optional-dependencies]
+web  = ["starlette>=0.37", "uvicorn>=0.30"]
+dev  = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+learning-net = "learningnet.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/interrealm-io/learning-net"
+Issues = "https://github.com/interrealm-io/learning-net/issues"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
