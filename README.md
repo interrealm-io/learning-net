@@ -202,6 +202,10 @@ is no paid tier. What is and is not in scope — and specifically what happens t
 school's own curriculum if they put it in a mirror — is written down in
 [GOVERNANCE.md](GOVERNANCE.md) rather than left to trust.
 
+Learning Net is authored and maintained by **Duncan Krebs**, Founder and Executive
+Director of the InterRealm Foundation. Questions about scope, stewardship, or pilot
+use: [hello@interrealm.org](mailto:hello@interrealm.org).
+
 ## Roadmap
 
 - **PyPI release** — so `uv tool install learning-net` works without a checkout.
@@ -225,3 +229,9 @@ normalizing, and openly licensing the standards of 52 jurisdictions is years of
 unglamorous work, and publishing it under CC BY-4.0 was a choice they did not have to
 make. Learning Net is a distribution layer on top of that, built in the spirit the
 license invites.
+
+---
+
+<div align="center">
+  <sub>Built by Duncan &amp; Claude for the InterRealm Foundation. 🤍</sub>
+</div>
