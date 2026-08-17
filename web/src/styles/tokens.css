@@ -1,0 +1,113 @@
+/* ============================================================================
+ * Learning Net — design tokens
+ *
+ * Layer 1 of the system, and the only place a raw hex value is allowed to
+ * appear. Everything below this file refers to tokens, never to colors.
+ *
+ * The foundation half of this palette is InterRealm's: same paper, same ink,
+ * same action blue, same 2px corner, same three typefaces. Learning Net is a
+ * project of the Foundation and should read as one without being a copy.
+ *
+ * The other half is this app's own law, and it is a semantic law rather than
+ * a decorative one:
+ *
+ *     solid  = authored in the data
+ *     dashed = inferred by bridging the Multi-State spine
+ *     brass  = the spine itself, and anything that crossed it
+ *
+ * Nothing else in the interface may use brass, and nothing inferred may be
+ * drawn with a solid line. That single rule is what lets a teacher trust a
+ * screen they did not build.
+ * ========================================================================= */
+
+:root {
+  /* ---- surface ------------------------------------------------------- */
+  --paper: #f7f6f1; /* app background */
+  --paper-2: #faf9f6; /* light text on dark surfaces */
+  --card: #ffffff; /* raised/inset panels */
+  --wash: #edece5; /* quiet fill: tracks, disabled, code */
+  --board: #111111; /* top bar, tooltips, code chips */
+  --board-2: #2a2d28; /* softer dark surface */
+
+  /* ---- ink ----------------------------------------------------------- */
+  --ink: #151515; /* primary text */
+  --ink-2: #2a2d28; /* body prose */
+  --ink-3: #5e625f; /* secondary, labels, captions */
+  --ink-on-dark: rgba(250, 249, 246, 0.82);
+
+  /* ---- line ---------------------------------------------------------- */
+  --line: #d8d9d4; /* default rule */
+  --line-2: #edece5; /* faint rule */
+  --line-strong: #151515; /* emphasis rule above a card */
+  --line-dark: rgba(250, 249, 246, 0.14);
+
+  /* ---- action (blue is interaction, never decoration) ----------------- */
+  --action: #2457d6;
+  --action-deep: #1741ae;
+  --action-wash: #eaf0ff;
+
+  /* ---- spine (brass is inference, and nothing else) ------------------- */
+  --spine: #8a5d0b;
+  --spine-line: #c9a24b;
+  --spine-bg: #fbf3e2;
+
+  /* ---- status -------------------------------------------------------- */
+  --ok: #207a56;
+  --error: #a33a2a;
+  --error-bg: #fbeeeb;
+
+  /* ---- sequential ramp: coverage, one hue, validated ------------------
+   * Monotone lightness, adjacent steps >= 0.06 L apart, light end 2.24:1 on
+   * white. "Isolated" is a status, not the bottom of the ramp — it gets the
+   * error color and a glyph, so hue never carries meaning alone. */
+  --ramp-1: #82b99c;
+  --ramp-2: #55a07c;
+  --ramp-3: #2e8160;
+  --ramp-4: #175f45;
+
+  /* ---- type ---------------------------------------------------------- */
+  --serif: 'Newsreader', 'Iowan Old Style', Georgia, serif;
+  --sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
+
+  --t-display: clamp(38px, 5.2vw, 62px);
+  --t-h1: clamp(30px, 3.6vw, 44px);
+  --t-h2: 25px;
+  --t-h3: 19px;
+  --t-lede: 18.5px;
+  --t-prose: 16.5px;
+  --t-body: 15.5px;
+  --t-ui: 14.5px;
+  --t-small: 13.5px;
+  --t-micro: 11.5px;
+
+  --lh-tight: 1.08;
+  --lh-head: 1.14;
+  --lh-body: 1.62;
+  --ls-head: -0.012em;
+  --ls-eyebrow: 0.18em;
+
+  /* ---- space (4px base) ---------------------------------------------- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 22px;
+  --s-6: 30px;
+  --s-7: 44px;
+  --s-8: 64px;
+  --s-9: clamp(56px, 8vw, 96px);
+
+  /* ---- shape --------------------------------------------------------- */
+  --radius: 2px; /* sharp, technical corners — the whole system is 2px */
+  --radius-pill: 999px;
+  --border: 1px solid var(--line);
+
+  /* ---- measure ------------------------------------------------------- */
+  --measure: 68ch;
+  --measure-tight: 58ch;
+  --page: 1120px;
+
+  /* ---- motion -------------------------------------------------------- */
+  --fast: 0.12s ease;
+}

@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { findStandard, searchStandards, stats, useApi } from '../api'
-import { navigate } from '../router'
-import { ErrorBox, fmt, Loading, Note, StandardEntry } from '../ui'
+import { useCursor, useDebounced } from '../hooks'
+import { navigate, standardHref } from '../router'
+import { Empty, ErrorBox, fmt, Loading, Note, PageHead, StandardEntry } from '../ui'
 
 const GRADES = ['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
 
@@ -9,139 +11,196 @@ const GRADES = ['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '1
 // a separator; searching statements won't find it, so codes get a direct lookup.
 const looksLikeCode = (q: string) => /^\S+$/.test(q) && /\d/.test(q) && /[.-]/.test(q)
 
-function onSubmit(e: FormEvent<HTMLFormElement>) {
-  e.preventDefault()
-  const f = new FormData(e.currentTarget)
-  const qs = new URLSearchParams()
-  for (const k of ['q', 'jurisdiction', 'subject', 'grade']) {
-    const v = String(f.get(k) ?? '').trim()
-    if (v) qs.set(k, v)
-  }
-  navigate(`/search?${qs}`)
+interface Filters {
+  jurisdiction: string
+  subject: string
+  grade: string
 }
 
 export function SearchPage({ params }: { params: URLSearchParams }) {
-  const q = params.get('q') ?? ''
-  const jurisdiction = params.get('jurisdiction') ?? ''
-  const subject = params.get('subject') ?? ''
-  const grade = params.get('grade') ?? ''
+  const [q, setQ] = useState(params.get('q') ?? '')
+  const [f, setF] = useState<Filters>({
+    jurisdiction: params.get('jurisdiction') ?? '',
+    subject: params.get('subject') ?? '',
+    grade: params.get('grade') ?? '',
+  })
+  const query = useDebounced(q.trim())
+
+  // The URL is the permalink, so it tracks the settled query — but with
+  // replaceState, not a hash assignment: a hashchange would remount this page
+  // and take the caret with it on every keystroke.
+  useEffect(() => {
+    const qs = new URLSearchParams()
+    if (query) qs.set('q', query)
+    for (const [k, v] of Object.entries(f)) if (v) qs.set(k, v)
+    history.replaceState(null, '', `#/search${qs.size ? `?${qs}` : ''}`)
+  }, [query, f])
 
   const st = useApi(stats, [])
   const results = useApi(
-    q
+    query
       ? () =>
           searchStandards({
-            query: q,
-            jurisdiction: jurisdiction || undefined,
-            subject: subject || undefined,
-            gradeLevel: grade || undefined,
+            query,
+            jurisdiction: f.jurisdiction || undefined,
+            subject: f.subject || undefined,
+            gradeLevel: f.grade || undefined,
           })
       : null,
-    [q, jurisdiction, subject, grade],
+    [query, f.jurisdiction, f.subject, f.grade],
   )
   const codeHits = useApi(
-    q && looksLikeCode(q) ? () => findStandard(q, jurisdiction || undefined) : null,
-    [q, jurisdiction],
+    query && looksLikeCode(query) ? () => findStandard(query, f.jurisdiction || undefined) : null,
+    [query, f.jurisdiction],
   )
+
+  const rows = [...(codeHits.data?.standards ?? []), ...(results.data?.results ?? [])]
+  const { cursor, onKeyDown } = useCursor(rows.length, (i) => navigate(standardHref(rows[i].id)))
+  const codeCount = codeHits.data?.standards.length ?? 0
 
   const jurisdictions = Object.keys(st.data?.jurisdictions ?? {}).sort((a, b) =>
     a === 'Multi-State' ? -1 : b === 'Multi-State' ? 1 : a.localeCompare(b),
   )
   const subjects = Object.keys(st.data?.subjects ?? {}).sort()
   const standardCount = st.data?.nodesByLabel['StandardsFrameworkItem']
+  const active = (Object.entries(f) as [keyof Filters, string][]).filter(([, v]) => v)
+
+  const set = (k: keyof Filters, v: string) => setF((prev) => ({ ...prev, [k]: v }))
+  const submit = (e: FormEvent) => e.preventDefault()
 
   return (
     <>
-      <h1 className="hero">Find a standard.</h1>
-      <p className="hero-sub">
-        {standardCount ? `${fmt(standardCount)} standards` : 'Standards'} across{' '}
-        {jurisdictions.length > 1 ? `${jurisdictions.length} jurisdictions` : 'every US jurisdiction'}{' '}
-        — search by topic, wording, or code.
-      </p>
+      <PageHead
+        eyebrow="Search"
+        title="Find a standard."
+        lede={
+          <>
+            {standardCount ? `${fmt(standardCount)} standards` : 'Standards'} across{' '}
+            {jurisdictions.length > 1
+              ? `${jurisdictions.length} jurisdictions`
+              : 'every US jurisdiction'}{' '}
+            — by topic, wording, or code. Results appear as you type.
+          </>
+        }
+      />
 
-      <form className="searchbar" key={params.toString()} onSubmit={onSubmit}>
-        <input
-          name="q"
-          type="search"
-          defaultValue={q}
-          placeholder="fractions, photosynthesis, 4.OA.A.3…"
-          aria-label="Search standards"
-          autoFocus
-        />
-        {/* Uncontrolled selects apply defaultValue only on mount; keying each
-            select by its option count remounts it when stats arrive — without
-            remounting the form, which would wipe in-progress typing. */}
-        <select
-          name="jurisdiction"
-          key={`j${jurisdictions.length}`}
-          defaultValue={jurisdiction}
-          aria-label="Jurisdiction"
-        >
-          <option value="">All jurisdictions</option>
-          {jurisdictions.map((j) => (
-            <option key={j}>{j}</option>
+      <form onSubmit={submit} role="search">
+        <div className="searchfield searchfield-sm" style={{ maxWidth: 720 }}>
+          <input
+            type="search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder="fractions, photosynthesis, 4.OA.A.3…"
+            aria-label="Search standards"
+            autoFocus
+          />
+          <button type="submit">Search</button>
+        </div>
+
+        <div className="filters filters-sticky">
+          <select
+            className="field"
+            value={f.jurisdiction}
+            onChange={(e) => set('jurisdiction', e.target.value)}
+            aria-label="Jurisdiction"
+          >
+            <option value="">All jurisdictions</option>
+            {jurisdictions.map((j) => (
+              <option key={j}>{j}</option>
+            ))}
+          </select>
+          <select
+            className="field"
+            value={f.subject}
+            onChange={(e) => set('subject', e.target.value)}
+            aria-label="Subject"
+          >
+            <option value="">All subjects</option>
+            {subjects.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+          <select
+            className="field"
+            value={f.grade}
+            onChange={(e) => set('grade', e.target.value)}
+            aria-label="Grade"
+          >
+            <option value="">All grades</option>
+            {GRADES.map((g) => (
+              <option key={g} value={g}>
+                Grade {g}
+              </option>
+            ))}
+          </select>
+
+          {active.map(([k, v]) => (
+            <button key={k} type="button" className="chip chip-on" onClick={() => set(k, '')}>
+              {k === 'grade' ? `Grade ${v}` : v} <span className="chip-x">×</span>
+            </button>
           ))}
-        </select>
-        <select name="subject" key={`s${subjects.length}`} defaultValue={subject} aria-label="Subject">
-          <option value="">All subjects</option>
-          {subjects.map((s) => (
-            <option key={s}>{s}</option>
-          ))}
-        </select>
-        <select name="grade" defaultValue={grade} aria-label="Grade">
-          <option value="">All grades</option>
-          {GRADES.map((g) => (
-            <option key={g} value={g}>
-              Grade {g}
-            </option>
-          ))}
-        </select>
-        <button className="button" type="submit">
-          Search
-        </button>
+          {active.length > 1 && (
+            <button
+              type="button"
+              className="chip"
+              onClick={() => setF({ jurisdiction: '', subject: '', grade: '' })}
+            >
+              Clear all
+            </button>
+          )}
+          <span className="count" style={{ marginLeft: 'auto' }}>
+            {results.data ? `${fmt(results.data.resultCount)} matches` : ''}
+          </span>
+        </div>
       </form>
 
       {!q && (
-        <p className="examples">
-          Try{' '}
-          {['fractions', 'photosynthesis', '4.OA.A.3'].map((ex, i) => (
-            <span key={ex}>
-              {i > 0 && ' · '}
-              <a href={`#/search?q=${encodeURIComponent(ex)}`}>{ex}</a>
-            </span>
-          ))}
-        </p>
+        <Empty title="Start typing.">
+          <p style={{ margin: '6px 0 0' }}>
+            Search the wording of a standard (<a href="#/search?q=fractions">fractions</a>,{' '}
+            <a href="#/search?q=photosynthesis">photosynthesis</a>) or paste a code (
+            <a href="#/search?q=4.OA.A.3">4.OA.A.3</a>). A code matches once per jurisdiction that
+            adopted it, so expect a set rather than a single hit.
+          </p>
+        </Empty>
       )}
 
-      {codeHits.data && codeHits.data.matchCount > 0 && (
-        <section className="section">
+      {(results.loading || codeHits.loading) && <Loading label="Searching" />}
+      {results.error && <ErrorBox message={results.error} />}
+
+      {codeCount > 0 && (
+        <section className="section-tight">
           <div className="section-head">
-            <h2>Code matches</h2>
-            <span className="count">{codeHits.data.matchCount}</span>
+            <h2 className="label">Exact code matches</h2>
+            <span className="count">{codeHits.data?.matchCount}</span>
           </div>
-          <Note text={codeHits.data.note} />
-          {codeHits.data.standards.map((s) => (
-            <StandardEntry key={s.id} s={s} />
+          <Note text={codeHits.data?.note} />
+          {codeHits.data?.standards.map((s, i) => (
+            <StandardEntry key={s.id} s={s} cursor={i === cursor} />
           ))}
         </section>
       )}
 
-      {results.loading && <Loading />}
-      {results.error && <ErrorBox message={results.error} />}
       {results.data && (
-        <section className="section">
+        <section className="section-tight">
           <div className="section-head">
-            <h2>Matches in statements</h2>
-            <span className="count">{results.data.resultCount}</span>
+            <h2 className="label">Matches in statements</h2>
+            <span className="count">{fmt(results.data.resultCount)}</span>
           </div>
-          {results.data.resultCount === 0 && (
-            <p className="quiet">
-              Nothing matches that wording{jurisdiction && ` in ${jurisdiction}`}. Try fewer or
-              broader words{looksLikeCode(q) ? '' : ', or a standard code like 4.OA.A.3'}.
-            </p>
+          {results.data.resultCount === 0 && codeCount === 0 && (
+            <Empty title="Nothing matches that wording.">
+              <p style={{ margin: '6px 0 0' }}>
+                {f.jurisdiction && `No hits in ${f.jurisdiction}. `}Try fewer or broader words
+                {active.length > 0 && ', or drop a filter'}
+                {looksLikeCode(query)
+                  ? '.'
+                  : ', or search a standard code like 4.OA.A.3 instead.'}
+              </p>
+            </Empty>
           )}
-          {results.data.results.map((s) => (
-            <StandardEntry key={s.id} s={s} />
+          {results.data.results.map((s, i) => (
+            <StandardEntry key={s.id} s={s} cursor={i + codeCount === cursor} />
           ))}
         </section>
       )}

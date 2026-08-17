@@ -87,7 +87,7 @@ export function StandardPage({ id }: { id: string }) {
         </div>
 
         <aside className="detail-side">
-          <h2>Where it sits</h2>
+          <h2 className="label">Where it sits</h2>
           <ol className="ladder">
             {[...d.ancestors].reverse().map((a) => (
               <li key={a.id}>
@@ -100,7 +100,7 @@ export function StandardPage({ id }: { id: string }) {
           </ol>
           {d.childCount > 0 && (
             <>
-              <h2>
+              <h2 className="label">
                 Children <span className="count">{d.childCount}</span>
               </h2>
               <ul className="child-list">

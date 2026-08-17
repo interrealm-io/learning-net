@@ -1,5 +1,5 @@
 import { stats, useApi } from '../api'
-import { ErrorBox, fmt, Loading, Section } from '../ui'
+import { ErrorBox, fmt, Loading, Section, PageHead } from '../ui'
 
 function ago(iso?: string) {
   if (!iso) return null
@@ -40,17 +40,20 @@ export function StatusPage() {
 
   return (
     <>
-      <h1 className="hero">This mirror.</h1>
-      <p className="hero-sub">
-        {snap.kgVersion ? (
-          <>
-            Built {ago(snap.builtAt) ?? snap.builtAt} from Learning Commons KG v{snap.kgVersion}. A
-            mirror that cannot say how stale it is has no business being trusted.
-          </>
-        ) : (
-          'Provenance is missing — this mirror predates provenance tracking; rebuild it.'
-        )}
-      </p>
+      <PageHead
+        eyebrow="Status"
+        title="This mirror."
+        lede={
+          snap.kgVersion ? (
+            <>
+              Built {ago(snap.builtAt) ?? snap.builtAt} from Learning Commons KG v{snap.kgVersion}.
+              A mirror that cannot say how stale it is has no business being trusted.
+            </>
+          ) : (
+            'Provenance is missing — this mirror predates provenance tracking; rebuild it.'
+          )
+        }
+      />
 
       <div className="tiles">
         <div className="tile">
@@ -102,7 +105,7 @@ export function StatusPage() {
       <Section title={`Standards by jurisdiction`}>
         <details>
           <summary>All {Object.keys(d.jurisdictions).length} jurisdictions</summary>
-          <table className="juris-table">
+          <table className="table">
             <thead>
               <tr>
                 <th scope="col">Jurisdiction</th>
@@ -115,7 +118,7 @@ export function StatusPage() {
                 .map(([j, n]) => (
                   <tr key={j}>
                     <td>{j}</td>
-                    <td className="mono">{fmt(n)}</td>
+                    <td className="num">{fmt(n)}</td>
                   </tr>
                 ))}
             </tbody>

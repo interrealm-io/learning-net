@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { standardHref } from './router'
 import type { Brief } from './types'
@@ -8,6 +9,57 @@ export function grades(g?: string) {
   if (!g) return null
   return (g.includes(',') ? 'Grades ' : 'Grade ') + g
 }
+
+/* ---- page furniture ----------------------------------------------------- */
+
+export function Eyebrow({ children }: { children: ReactNode }) {
+  return <p className="eyebrow">{children}</p>
+}
+
+export function PageHead({
+  eyebrow,
+  title,
+  lede,
+  children,
+}: {
+  eyebrow: string
+  title: ReactNode
+  lede?: ReactNode
+  children?: ReactNode
+}) {
+  return (
+    <header className="page-head">
+      <Eyebrow>{eyebrow}</Eyebrow>
+      <h1 className="h1">{title}</h1>
+      {lede && <p className="lede">{lede}</p>}
+      {children}
+    </header>
+  )
+}
+
+export function Section({
+  title,
+  aside,
+  id,
+  children,
+}: {
+  title: string
+  aside?: ReactNode
+  id?: string
+  children: ReactNode
+}) {
+  return (
+    <section className="section" id={id}>
+      <div className="section-head">
+        <h2 className="label">{title}</h2>
+        {aside}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+/* ---- identity ----------------------------------------------------------- */
 
 export function CodeChip({ code }: { code?: string }) {
   return code ? <span className="code-chip">{code}</span> : null
@@ -31,9 +83,18 @@ export function Tags({ s }: { s: Brief }) {
   )
 }
 
-export function StandardEntry({ s }: { s: Brief }) {
+export function StandardEntry({ s, cursor }: { s: Brief; cursor?: boolean }) {
+  const el = useRef<HTMLAnchorElement>(null)
+  useEffect(() => {
+    if (cursor) el.current?.scrollIntoView({ block: 'nearest' })
+  }, [cursor])
   return (
-    <a className="entry" href={standardHref(s.id)}>
+    <a
+      ref={el}
+      className={cursor ? 'entry entry-cursor' : 'entry'}
+      href={standardHref(s.id)}
+      data-cursor={cursor || undefined}
+    >
       <Tags s={s} />
       {s.statement && <p className="statement">{s.statement}</p>}
     </a>
@@ -52,15 +113,19 @@ export function SpineBadge({ on }: { on?: boolean }) {
   )
 }
 
+/* ---- state -------------------------------------------------------------- */
+
 export function Note({ text }: { text?: string }) {
   return text ? <p className="note">{text}</p> : null
 }
 
-export function Loading() {
+// A determinate-looking bar rather than a spinner: it occupies a fixed 2px of
+// height, so results arriving never shove the page down.
+export function Loading({ label = 'Loading' }: { label?: string }) {
   return (
-    <p className="quiet" role="status">
-      Loading…
-    </p>
+    <div className="loading-bar" role="status" aria-label={label}>
+      <span />
+    </div>
   )
 }
 
@@ -72,22 +137,57 @@ export function ErrorBox({ message }: { message: string }) {
   )
 }
 
-export function Section({
-  title,
-  aside,
-  children,
-}: {
-  title: string
-  aside?: ReactNode
-  children: ReactNode
-}) {
+export function Empty({ title, children }: { title: string; children?: ReactNode }) {
   return (
-    <section className="section">
-      <div className="section-head">
-        <h2>{title}</h2>
-        {aside}
-      </div>
+    <div className="empty">
+      <strong>{title}</strong>
       {children}
-    </section>
+    </div>
+  )
+}
+
+/* ---- code + copy -------------------------------------------------------- */
+
+export function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) {
+  const [done, setDone] = useState(false)
+  return (
+    <button
+      type="button"
+      className={done ? 'copy copy-done' : 'copy'}
+      onClick={() => {
+        // Clipboard access is refused on plain-HTTP origins other than
+        // localhost; a district serving this over http:// on a LAN address
+        // must still get the text, so fall back to a hidden selection.
+        const ok = () => {
+          setDone(true)
+          setTimeout(() => setDone(false), 1600)
+        }
+        navigator.clipboard?.writeText(text).then(ok, () => {
+          const ta = document.createElement('textarea')
+          ta.value = text
+          ta.style.position = 'fixed'
+          ta.style.opacity = '0'
+          document.body.append(ta)
+          ta.select()
+          try {
+            document.execCommand('copy')
+            ok()
+          } finally {
+            ta.remove()
+          }
+        })
+      }}
+    >
+      {done ? 'Copied' : label}
+    </button>
+  )
+}
+
+export function CodeBlock({ code, copy = true }: { code: string; copy?: boolean }) {
+  return (
+    <div className="code">
+      {copy && <CopyButton text={code} />}
+      <pre>{code}</pre>
+    </div>
   )
 }

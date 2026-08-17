@@ -1,0 +1,102 @@
+/* ============================================================================
+ * Base — element defaults. No class selectors live in this file.
+ * ========================================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  letter-spacing: var(--ls-head);
+  line-height: var(--lh-head);
+  color: var(--ink);
+  margin: 0;
+  text-wrap: pretty;
+}
+
+p {
+  margin: 0 0 var(--s-4);
+  text-wrap: pretty;
+}
+
+a {
+  color: var(--action);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(36, 87, 214, 0.4);
+}
+
+a:hover {
+  color: var(--action-deep);
+  text-decoration-color: currentColor;
+}
+
+::selection {
+  background: rgba(36, 87, 214, 0.18);
+}
+
+:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
+hr {
+  border: 0;
+  border-top: var(--border);
+  margin: var(--s-6) 0;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--mono);
+}
+
+svg {
+  display: block;
+}
+
+::placeholder {
+  color: var(--ink-3);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

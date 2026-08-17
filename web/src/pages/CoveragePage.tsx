@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { coverageReport, stats, useApi } from '../api'
-import { ErrorBox, fmt, Loading, Section } from '../ui'
+import { ErrorBox, fmt, Loading, Section, PageHead } from '../ui'
 import type { CoverageRow } from '../types'
 
 // A tile-grid map: each state is a same-sized tile in its rough geographic
@@ -195,13 +195,18 @@ export function CoveragePage() {
 
   return (
     <>
-      <h1 className="hero">The gap map.</h1>
-      <p className="hero-sub">
-        "Standards-aligned" is only checkable where alignment edges exist. This page measures
-        that layer for every jurisdiction — a measurement nobody else publishes, including
-        upstream. It is not a criticism of the standards, which are complete; it is a work
-        list for the connective tissue between them.
-      </p>
+      <PageHead
+        eyebrow="Coverage"
+        title="The gap map."
+        lede={
+          <>
+            "Standards-aligned" is only checkable where alignment edges exist. This page measures
+            that layer for every jurisdiction — a measurement nobody else publishes, including
+            upstream. It is not a criticism of the standards, which are complete; it is a work list
+            for the connective tissue between them.
+          </>
+        }
+      />
 
       {nat && (
         <div className="tiles">
@@ -227,7 +232,7 @@ export function CoveragePage() {
       <div className="cov-filter">
         <label>
           Subject{' '}
-          <select value={subject} onChange={(e) => setSubject(e.target.value)}>
+          <select className="field" value={subject} onChange={(e) => setSubject(e.target.value)}>
             <option value="">All subjects</option>
             {Object.keys(st.data?.subjects ?? {})
               .sort()
@@ -260,8 +265,8 @@ export function CoveragePage() {
           )}
 
           <Section title="Worst first, per jurisdiction">
-            <div className="cov-table-wrap">
-              <table className="juris-table cov-table">
+            <div className="table-wrap">
+              <table className="table cov-table">
                 <thead>
                   <tr>
                     <th scope="col">Jurisdiction</th>
@@ -283,11 +288,11 @@ export function CoveragePage() {
                         )}
                         {r.isolated && <span className="cov-iso-mark"> ! no alignment edges</span>}
                       </td>
-                      <td className="mono">{fmt(r.standards)}</td>
-                      <td className="mono">{r.crosswalkPct.toFixed(1)}%</td>
-                      <td className="mono">{r.componentsPct.toFixed(1)}%</td>
-                      <td className="mono">{fmt(r.withCurriculum)}</td>
-                      <td className="mono">{fmt(r.withProgression)}</td>
+                      <td className="num">{fmt(r.standards)}</td>
+                      <td className="num">{r.crosswalkPct.toFixed(1)}%</td>
+                      <td className="num">{r.componentsPct.toFixed(1)}%</td>
+                      <td className="num">{fmt(r.withCurriculum)}</td>
+                      <td className="num">{fmt(r.withProgression)}</td>
                     </tr>
                   ))}
                 </tbody>
