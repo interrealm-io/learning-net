@@ -11,8 +11,8 @@ import sqlite3
 
 import pytest
 
-from learningnet.build import FTS, INDEXES, SCHEMA
-from learningnet.graph import Graph
+from collective.build import FTS, INDEXES, SCHEMA
+from collective.graph import Graph
 
 
 def _node(i, label, **p):

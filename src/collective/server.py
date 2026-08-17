@@ -1,4 +1,4 @@
-"""MCP server over a Learning Net mirror.
+"""MCP server over a Collective mirror.
 
 Speaks MCP over stdio with nothing but the standard library — no SDK, no pip
 install, no network. That constraint is deliberate: the point of a mirror is
@@ -17,7 +17,7 @@ import sys
 from .graph import Graph, GraphError
 
 PROTOCOL_VERSION = "2025-06-18"
-SERVER_NAME = "learning-net"
+SERVER_NAME = "collective"
 SERVER_VERSION = "0.1.0"
 
 INSTRUCTIONS = (
@@ -317,9 +317,9 @@ def _handle(req, handlers):
 
 
 def serve(db_path=None):
-    db_path = db_path or os.environ.get("LEARNING_NET_DB")
+    db_path = db_path or os.environ.get("COLLECTIVE_DB")
     if not db_path:
-        raise GraphError("no mirror path — pass one or set LEARNING_NET_DB")
+        raise GraphError("no mirror path — pass one or set COLLECTIVE_DB")
     g = Graph(db_path)
     handlers = _handlers(g)
     for line in sys.stdin:

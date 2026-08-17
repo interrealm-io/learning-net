@@ -111,7 +111,7 @@ class _Handler(BaseHTTPRequestHandler):
         if any(p == ".." or "\\" in p for p in parts):
             self._send(404, b"not found", "text/plain")
             return
-        root = resources.files("learningnet") / "static"
+        root = resources.files("collective") / "static"
         target = root.joinpath(*parts) if parts else root / "index.html"
         # Filesystem traversables raise OSError; zipapp ones KeyError/ValueError.
         missing = (OSError, KeyError, ValueError)

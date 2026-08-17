@@ -1,6 +1,6 @@
 # Data license and attribution
 
-Learning Net's **code** is Apache-2.0 (see [LICENSE](LICENSE)). This file is about the
+Collective's **code** is Apache-2.0 (see [LICENSE](LICENSE)). This file is about the
 **data**, which is not ours.
 
 ## What the data is
@@ -8,7 +8,7 @@ Learning Net's **code** is Apache-2.0 (see [LICENSE](LICENSE)). This file is abo
 The Learning Commons Knowledge Graph, published by Learning Commons under
 **Creative Commons Attribution 4.0 International (CC BY-4.0)**.
 
-Every node and every edge in the graph carries two properties that Learning Net treats
+Every node and every edge in the graph carries two properties that Collective treats
 as load-bearing and never strips:
 
 - `license` — the CC BY-4.0 URI
@@ -26,7 +26,7 @@ and several sub-collections carry their own additional attribution — Achieveme
 Network (learning components), Illustrative Mathematics (curriculum), Carnegie
 Foundation and ETS (durable skills), XQ Institute (competencies).
 
-## How Learning Net meets the obligation
+## How Collective meets the obligation
 
 CC BY-4.0 permits redistribution and derivative works, including commercial use,
 provided attribution is preserved. Concretely:
@@ -37,7 +37,7 @@ provided attribution is preserved. Concretely:
 2. **Attribution travels with any export.** Any path that emits data emits its
    attribution with it.
 3. **Provenance is recorded.** Every mirror stores when it was built, from what source,
-   and the SHA-256 of each source file, readable via `learning-net status`. A mirror
+   and the SHA-256 of each source file, readable via `collective status`. A mirror
    can always say what it is a copy of.
 4. **No claim is made over the data.** The Apache-2.0 grant covers this repository's
    code only. Nothing here relicenses, sublicenses, or asserts ownership of Learning
@@ -53,13 +53,13 @@ https://cdn.learningcommons.org/knowledge-graph/v1.12.0/exports/nodes.jsonl
 https://cdn.learningcommons.org/knowledge-graph/v1.12.0/exports/relationships.jsonl
 ```
 
-No API key, no account, no request form. `learning-net init` fetches exactly these URLs
+No API key, no account, no request form. `collective init` fetches exactly these URLs
 and passes upstream's own `ref` parameter so the traffic is identifiable as a mirror
 rather than as scraping.
 
 **A distinction worth keeping clear:** their authenticated MCP API at
 `kg.mcp.learningcommons.org` is a *separate surface*, governed by whatever agreement
-attaches to your key. Learning Net does not use it. Everything here comes from the
+attaches to your key. Collective does not use it. Everything here comes from the
 public CDN under the terms CC BY-4.0 already grants.
 
 `build` never touches the network at all, so if you prefer to obtain the export another

@@ -1,4 +1,4 @@
-"""Build a Learning Net mirror from a Learning Commons export.
+"""Build a Collective mirror from a Learning Commons export.
 
 Reads `nodes.jsonl` and `relationships.jsonl` and produces an indexed SQLite
 database with full-text search. Stdlib only — a school IT admin with a stock

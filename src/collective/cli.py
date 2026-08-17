@@ -1,17 +1,17 @@
-"""learning-net — command line interface.
+"""collective — command line interface.
 
-    learning-net init    [--version V]                 download + build, one command
-    learning-net build   <export-dir>                  build a mirror from a local export
-    learning-net sync    [--version V] [--check]       fetch, diff, report, rebuild
-    learning-net update                                is there a newer upstream release?
-    learning-net coverage [--csv f]                    alignment gap map by jurisdiction
-    learning-net status                                what is in the mirror, how stale
-    learning-net serve                                 MCP server on stdio
-    learning-net web                                   web explorer UI
-    learning-net query   <tool> [k=v ...]              one-shot query, JSON out
+    collective init    [--version V]                 download + build, one command
+    collective build   <export-dir>                  build a mirror from a local export
+    collective sync    [--version V] [--check]       fetch, diff, report, rebuild
+    collective update                                is there a newer upstream release?
+    collective coverage [--csv f]                    alignment gap map by jurisdiction
+    collective status                                what is in the mirror, how stale
+    collective serve                                 MCP server on stdio
+    collective web                                   web explorer UI
+    collective query   <tool> [k=v ...]              one-shot query, JSON out
 
 Every command takes --db PATH, on either side of the subcommand.
-The mirror path defaults to $LEARNING_NET_DB, then ./data/kg.sqlite.
+The mirror path defaults to $COLLECTIVE_DB, then ./data/kg.sqlite.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ import os
 import re
 import sys
 
-DEFAULT_DB = os.environ.get("LEARNING_NET_DB") or os.path.join("data", "kg.sqlite")
+DEFAULT_DB = os.environ.get("COLLECTIVE_DB") or os.path.join("data", "kg.sqlite")
 DEFAULT_EXPORT_DIR = "data/export"
 
 
@@ -34,7 +34,7 @@ def _prog():
     """The invocation to print in hints, exactly as the user would retype it.
 
     Every suggested command (init's "Ready. Try:", sync's rebuild line, ...) must
-    be copy-pasteable for however this process was started. `learning-net` is only
+    be copy-pasteable for however this process was started. `collective` is only
     on PATH for the installed script — a zipapp or `python -m` user who pastes it
     gets "command not found" from the tool's own advice.
     """
@@ -42,8 +42,8 @@ def _prog():
 
     argv0 = sys.argv[0] or ""
     base = os.path.basename(argv0)
-    if base in ("learning-net", "learning-net.exe"):
-        return "learning-net"
+    if base in ("collective", "collective.exe"):
+        return "collective"
     py = os.path.basename(sys.executable or "") or "python3"
     if argv0.endswith(".pyz") or zipfile.is_zipfile(argv0):
         return f"{py} {argv0}"
@@ -52,8 +52,8 @@ def _prog():
         # PYTHONPATH, so the hint has to carry it too.
         pp = os.environ.get("PYTHONPATH")
         prefix = f"PYTHONPATH={pp} " if pp else ""
-        return f"{prefix}{py} -m learningnet"
-    return "learning-net"
+        return f"{prefix}{py} -m collective"
+    return "collective"
 
 
 def _fmt_prov(prov):
@@ -71,7 +71,7 @@ def cmd_init(args):
     export = os.path.expanduser(args.dir or DEFAULT_EXPORT_DIR)
     db = _db(args)
 
-    print(f"  Learning Net — initialising from Learning Commons v{version}\n")
+    print(f"  Collective — initialising from Learning Commons v{version}\n")
     print(f"  source  {export_url('nodes.jsonl', version)}")
     print(f"  export  {export}")
     print(f"  mirror  {db}\n")
@@ -331,7 +331,7 @@ def cmd_query(args):
 
 def main(argv=None):
     # --db is accepted on either side of the subcommand. Both read naturally
-    # (`learning-net --db X status` and `learning-net status --db X`) and people
+    # (`collective --db X status` and `collective status --db X`) and people
     # write both, so neither should be an error. SUPPRESS keeps the later parse
     # from overwriting a value supplied earlier; _db() reads it with getattr.
     common = argparse.ArgumentParser(add_help=False)

@@ -1,4 +1,4 @@
-"""Learning Net — a self-hostable mirror and MCP server for the Learning Commons
+"""Collective — a self-hostable mirror and MCP server for the Learning Commons
 Knowledge Graph.
 
 Open infrastructure for educational AI, stewarded by the InterRealm Foundation.

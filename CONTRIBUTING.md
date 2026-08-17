@@ -3,8 +3,8 @@
 ## Setup
 
 ```bash
-git clone https://github.com/interrealm-io/learning-net
-cd learning-net
+git clone https://github.com/interwax/collective
+cd collective
 make install                  # venv at .venv with dev extras
 source .venv/bin/activate
 pytest
@@ -36,17 +36,17 @@ Silent inference is the bug class this project is most exposed to.
 ## Working on the web UI
 
 The explorer's source lives in `web/` (Vite + React + TypeScript). The built
-bundle is **committed** at `src/learningnet/static/` so runtime machines never
+bundle is **committed** at `src/collective/static/` so runtime machines never
 need Node — which means UI changes are a two-step:
 
 ```bash
-make ui        # npm install + build into src/learningnet/static
-git add web src/learningnet/static
+make ui        # npm install + build into src/collective/static
+git add web src/collective/static
 ```
 
 CI rebuilds the bundle and fails the PR if the committed copy doesn't match
 the source. `npm run dev` inside `web/` gives hot reload, proxying `/api` to a
-`learning-net web` server on port 8788.
+`collective web` server on port 8788.
 
 ## No dependencies in the core
 

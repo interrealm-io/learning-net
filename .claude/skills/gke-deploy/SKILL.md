@@ -1,11 +1,11 @@
 ---
 name: gke-deploy
-description: Build, push, and roll learning-net to GKE (learningnet.interrealm.org) through the ~/core monorepo and Argo CD. Use when asked to deploy, ship, release, or roll the site to production.
+description: Build, push, and roll collective to GKE (learningnet.interrealm.org) through the ~/core monorepo and Argo CD. Use when asked to deploy, ship, release, or roll the site to production.
 ---
 
-# Deploy learning-net to GKE
+# Deploy collective to GKE
 
-This repo (github.com/interrealm-io/learning-net) is the source of truth. A
+This repo (github.com/interwax/collective) is the source of truth. A
 vendored copy lives at `~/core` `learningnet/` (realmtrix-ai/core monorepo);
 deploying means: sync the vendored copy → build/push the image locally (there
 is deliberately no CI build — the ~740MB `data/kg.sqlite` layer can't live in
@@ -20,10 +20,10 @@ auto-syncs the cluster.
    is this repo's full HEAD sha: `SHA=$(git rev-parse HEAD)`.
 2. The committed web bundle is current: if anything under `web/src/` changed
    since the last `npm run build`, rebuild (`cd web && npm run build`) and
-   commit — the image serves `src/learningnet/static/` as-is, no build in
+   commit — the image serves `src/collective/static/` as-is, no build in
    Docker.
 3. `data/kg.sqlite` exists here (~740MB). If missing:
-   `learning-net init --db data/kg.sqlite`.
+   `collective init --db data/kg.sqlite`.
 4. Docker daemon running; gcloud account is `inbox@realmtrix.com`; Artifact
    Registry auth configured for `us-central1-docker.pkg.dev`.
 
@@ -33,7 +33,7 @@ Work in a throwaway worktree of core `main` — the ~/core checkout usually has
 unrelated work in flight on another branch; never touch it.
 
 ```sh
-LN=~/code/learning-net
+LN=~/clones/collective
 SHA=$(git -C "$LN" rev-parse HEAD)
 IMG=us-central1-docker.pkg.dev/realmtrix-infra-prod/realmtrix/learningnet:$SHA
 
@@ -83,7 +83,7 @@ git -C ~/core worktree add "$WT" origin/main
 5. **Verify**: Argo (App-of-Apps over `infra/k8s/bootstrap/`) auto-syncs from
    main within ~3 min. Then confirm the site serves the new bundle — the
    asset hashes in the live HTML must match this repo's committed
-   `src/learningnet/static/index.html`:
+   `src/collective/static/index.html`:
 
    ```sh
    curl -s https://learningnet.interrealm.org/ | grep -o 'index-[^"]*\.\(js\|css\)'
@@ -96,6 +96,14 @@ git -C ~/core worktree add "$WT" origin/main
 
 ## Gotchas
 
+- **Rename fallout (until the monorepo catches up).** This repo's Python
+  package was renamed `learningnet` → `collective`, but the vendored copy in
+  ~/core still lives under `learningnet/` and its Dockerfile runs
+  `CMD ["learning-net", "web", ...]`. The first deploy after the rename must
+  also update `~/core/learningnet/Dockerfile` (CMD and any comments →
+  `collective`) and any `LEARNING_NET_DB` env in the k8s manifests →
+  `COLLECTIVE_DB`, or the container will fail to start. The monorepo
+  *directory* names (`learningnet/`, image name, namespace) can stay.
 - **Terraform is not part of a deploy.** Only touch `infra/terraform/coregke`
   for cert/DNS/domain changes — and if you do: `terraform.tfvars` is
   gitignored and sets `project = realmtrix-infra-prod`; a worktree without it

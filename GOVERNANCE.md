@@ -1,18 +1,18 @@
 # Governance
 
-Learning Net is stewarded by the **InterRealm Foundation** as non-profit open
+Collective is stewarded by the **InterRealm Foundation** as non-profit open
 infrastructure for educational AI.
 
 This document exists because two questions will be asked early and deserve an answer
 written down in advance rather than negotiated later:
 
-- *If a district puts its curriculum in a Learning Net mirror, what happens to it?*
+- *If a district puts its curriculum in a Collective mirror, what happens to it?*
 - *Is this a funnel for a commercial product?*
 
 ## The short answers
 
 **A district's data stays the district's.** A mirror runs on hardware you control.
-Learning Net has no telemetry, no phone-home, no hosted tier that your instance reports
+Collective has no telemetry, no phone-home, no hosted tier that your instance reports
 to, and no mechanism by which content in your mirror reaches the Foundation or anyone
 else. If you never open a network port, nothing leaves.
 
@@ -21,20 +21,20 @@ products in adjacent space — most directly **Hopblox**, a learning platform fo
 families and kids. That is a real relationship and pretending otherwise would be worse
 than stating it. The line:
 
-| | Learning Net | Hopblox |
+| | Collective | Hopblox |
 |---|---|---|
 | Steward | InterRealm Foundation | commercial |
 | License | Apache-2.0, CC BY-4.0 data | proprietary |
 | Contains | public standards, public curriculum alignments | learner memory, per-child models |
 | Runs | on your hardware | hosted |
 
-Hopblox is a **consumer** of Learning Net, on exactly the same terms as any other
+Hopblox is a **consumer** of Collective, on exactly the same terms as any other
 consumer. It gets no privileged API, no reserved namespace, no feature that is withheld
 from the open project, and no access to any mirror it does not itself host.
 
 The asymmetry that makes this stable: what is valuable to Hopblox is the **long-term
 learner memory graph** — what a specific child knows, how they got there, what to teach
-next. None of that is in Learning Net and none of it can be, because Learning Net
+next. None of that is in Collective and none of it can be, because Collective
 contains public standards data and nothing about any individual. The two are not
 competing for the same asset, so there is no gravitational pull toward closing the open
 one.
@@ -42,7 +42,7 @@ one.
 ## Not open-core
 
 There is no paid tier, no "enterprise edition," and no feature held back from the open
-repository. If a capability belongs in Learning Net it ships in Learning Net.
+repository. If a capability belongs in Collective it ships in Collective.
 
 The failure mode this rules out: a project that is open until the useful parts are
 finished, then quietly stops merging them. If that ever appears to be happening, this
@@ -69,7 +69,7 @@ document is the thing to hold the Foundation to.
 
 ## Relationship to Learning Commons
 
-Learning Commons is the **upstream and the authority**. Learning Net mirrors their
+Learning Commons is the **upstream and the authority**. Collective mirrors their
 published graph under the license they chose; it does not fork it, compete with it, or
 assert an alternative canon. Where the mirror and upstream disagree, upstream is
 correct and the mirror has a bug.
@@ -85,7 +85,7 @@ Ambitions for that relationship, in order of how much agreement each needs:
 4. **Federation** — instances that can exchange local extensions against a shared,
    content-addressed identity spine.
 
-Each rung is useful on its own. None is contingent on the next, and Learning Net stays
+Each rung is useful on its own. None is contingent on the next, and Collective stays
 worth running even if the relationship never advances past rung one.
 
 ## Decisions

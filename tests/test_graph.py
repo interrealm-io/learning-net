@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from learningnet.graph import Graph
-from learningnet.sync import Shape, diff_shapes, has_breaking
+from collective.graph import Graph
+from collective.sync import Shape, diff_shapes, has_breaking
 
 
 def test_code_is_not_unique_and_spine_sorts_first(mirror):
@@ -137,16 +137,16 @@ def fake_cdn(tmp_path):
 
 
 def test_export_url_matches_upstream_layout():
-    from learningnet.sync import export_url
+    from collective.sync import export_url
 
     assert export_url("nodes.jsonl", "1.12.0") == (
         "https://cdn.learningcommons.org/knowledge-graph/v1.12.0/exports/"
-        "nodes.jsonl?ref=learning-net"
+        "nodes.jsonl?ref=collective"
     )
 
 
 def test_fetch_downloads_both_exports(tmp_path, fake_cdn):
-    from learningnet.sync import fetch
+    from collective.sync import fetch
 
     got = fetch(tmp_path / "out", "1.12.0", base=fake_cdn, log=lambda *a, **k: None)
     assert set(got) == {"nodes.jsonl", "relationships.jsonl"}
@@ -154,27 +154,27 @@ def test_fetch_downloads_both_exports(tmp_path, fake_cdn):
 
 
 def test_fetch_unknown_version_is_a_clear_error(tmp_path, fake_cdn):
-    from learningnet.sync import fetch
+    from collective.sync import fetch
 
     with pytest.raises(RuntimeError):
         fetch(tmp_path / "out", "9.9.9", base=fake_cdn, log=lambda *a, **k: None)
 
 
 def test_discover_finds_newer_release(fake_cdn):
-    from learningnet.sync import discover_versions
+    from collective.sync import discover_versions
 
     assert discover_versions("1.12.0", base=fake_cdn) == "1.13.0"
 
 
 def test_discover_returns_current_when_nothing_newer(fake_cdn):
-    from learningnet.sync import discover_versions
+    from collective.sync import discover_versions
 
     assert discover_versions("1.13.0", base=fake_cdn) == "1.13.0"
 
 
 def test_build_records_upstream_version(tmp_path, fake_cdn):
-    from learningnet.build import build
-    from learningnet.sync import fetch, mirror_version
+    from collective.build import build
+    from collective.sync import fetch, mirror_version
 
     exp = tmp_path / "e"
     fetch(exp, "1.12.0", base=fake_cdn, log=lambda *a, **k: None)
@@ -190,9 +190,9 @@ def test_interrupted_build_does_not_corrupt_the_live_mirror(tmp_path, fake_cdn, 
     Regression: the build ran in place with journal_mode=OFF, so an interrupted
     run produced a corrupt file that the NEXT build could not open either.
     """
-    from learningnet import build as buildmod
-    from learningnet.build import build
-    from learningnet.sync import fetch
+    from collective import build as buildmod
+    from collective.build import build
+    from collective.sync import fetch
 
     exp = tmp_path / "e"
     fetch(exp, "1.12.0", base=fake_cdn, log=lambda *a, **k: None)
@@ -243,7 +243,7 @@ def test_bad_jurisdiction_suggests_rather_than_erroring(mirror):
 
 
 def test_verify_is_exposed_as_an_mcp_tool():
-    from learningnet.server import TOOLS
+    from collective.server import TOOLS
 
     names = [t["name"] for t in TOOLS]
     assert "verify_alignment_claim" in names
@@ -287,6 +287,6 @@ def test_coverage_carries_provenance(mirror):
 
 
 def test_coverage_is_an_mcp_tool():
-    from learningnet.server import TOOLS
+    from collective.server import TOOLS
 
     assert "coverage_report" in [t["name"] for t in TOOLS]

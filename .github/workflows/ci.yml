@@ -32,8 +32,8 @@ jobs:
       - run: npm --prefix web run build
       - name: committed bundle must match the source
         run: |
-          if [ -n "$(git status --porcelain -- src/learningnet/static)" ]; then
-            git status -- src/learningnet/static
-            echo "web bundle is out of date — run 'make ui' and commit src/learningnet/static"
+          if [ -n "$(git status --porcelain -- src/collective/static)" ]; then
+            git status -- src/collective/static
+            echo "web bundle is out of date — run 'make ui' and commit src/collective/static"
             exit 1
           fi

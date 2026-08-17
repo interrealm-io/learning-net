@@ -1,5 +1,5 @@
 [project]
-name = "learning-net"
+name = "collective"
 version = "0.1.0"
 description = "A self-hostable mirror, MCP server, and explorer for the Learning Commons Knowledge Graph"
 readme = "README.md"
@@ -23,11 +23,11 @@ dependencies = []
 dev  = ["pytest>=8", "ruff>=0.6"]
 
 [project.scripts]
-learning-net = "learningnet.cli:main"
+collective = "collective.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/interrealm-io/learning-net"
-Issues = "https://github.com/interrealm-io/learning-net/issues"
+Homepage = "https://github.com/interwax/collective"
+Issues = "https://github.com/interwax/collective/issues"
 
 [build-system]
 requires = ["setuptools>=68"]
@@ -36,10 +36,10 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 
-# The built web bundle ships inside the package so `learning-net web` works
+# The built web bundle ships inside the package so `collective web` works
 # with no Node toolchain anywhere near the runtime machine.
 [tool.setuptools.package-data]
-learningnet = ["static/*", "static/assets/*"]
+collective = ["static/*", "static/assets/*"]
 
 [tool.ruff]
 line-length = 100

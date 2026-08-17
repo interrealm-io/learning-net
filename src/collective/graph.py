@@ -1,4 +1,4 @@
-"""Query layer over a Learning Net mirror.
+"""Query layer over a Collective mirror.
 
 This module knows about the Learning Commons graph and nothing about transports.
 The MCP server, the HTTP API, and the CLI all sit on top of it — which is what
@@ -93,7 +93,7 @@ class Graph:
             )
         except sqlite3.OperationalError as e:
             raise GraphError(
-                f"cannot open mirror at {self.db_path}: {e}. Run `learning-net build` first."
+                f"cannot open mirror at {self.db_path}: {e}. Run `collective build` first."
             ) from e
         self.con.row_factory = sqlite3.Row
 

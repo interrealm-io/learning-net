@@ -1,4 +1,4 @@
-# Learning Net
+# Collective
 
 **A self-hostable mirror, MCP server, and explorer for the Learning Commons Knowledge Graph.**
 An independent, open-source **extension to the [Learning Commons Platform](https://www.learningcommons.org)**.
@@ -8,12 +8,12 @@ standards across 52 US jurisdictions, the granular learning components beneath t
 the alignments between them, and curriculum mapped onto them — 283,381 nodes and
 492,169 edges, published under CC BY-4.0.
 
-Learning Net makes that graph something a school can **run**. Sync it, host it, query
+Collective makes that graph something a school can **run**. Sync it, host it, query
 it, explore it, extend it. No network round-trip per lookup, no rate limit, no single
 point of failure, and no requirement that anyone else's server be up for a classroom
 to work.
 
-Commons is the collection. Net is the distribution.
+Commons is the collection. Collective is the distribution.
 
 > **Status: alpha.** Upstream is in private beta and explicitly evolving with breaking
 > changes. Sync reports schema drift rather than absorbing it — see
@@ -43,14 +43,14 @@ That is one of three topology facts that decide whether a query returns anything
    likewise point only at Multi-State Mathematics.
 
 None of this is documented, and all of it is discoverable only by getting an empty
-result and not believing it. Learning Net encodes all three, bridges automatically,
+result and not believing it. Collective encodes all three, bridges automatically,
 and **tells you when it bridged** — every result that crossed the spine says
 `bridgedViaMultiState` or `viaMultiStateHub`, so you can always separate what the data
 says from what the tool inferred.
 
 ## What you get
 
-| Feature | Hosted KG | Learning Net |
+| Feature | Hosted KG | Collective |
 | :--- | :---: | :---: |
 | Resolve a standard code | Yes | **Yes** |
 | Learning components | Yes | **Yes** |
@@ -60,7 +60,7 @@ says from what the tool inferred.
 | Framework context (ancestors, children) | — | **Yes** |
 | Aligned curriculum | — | **Yes, auto-bridged** |
 | Raw node access | — | **Yes** |
-| Browse it in a web UI | — | **Yes**, `learning-net web` |
+| Browse it in a web UI | — | **Yes**, `collective web` |
 | Works offline | — | **Yes** |
 | Runs on your hardware | — | **Yes** |
 | Says which upstream release it is | — | **Yes** |
@@ -72,9 +72,21 @@ overhead — no key, no rate limit, no network round-trip per lookup.
 ## Quick start
 
 ```bash
-git clone https://github.com/interrealm-io/learning-net && cd learning-net
+git clone https://github.com/interwax/collective && cd collective
+python3 demo.py              # Windows: py demo.py
+```
+
+That's it. The script creates a private `.venv`, installs the package,
+downloads ~900MB of exports, builds the mirror, and opens the explorer in a
+browser tab. Every step is skipped once done, so the same command is also the
+fastest relaunch. Stock Python 3.11+ is the only prerequisite, on every OS.
+
+Prefer the CLI on your PATH? Install it directly instead:
+
+```bash
 uv tool install .            # or: pipx install .
-learning-net init            # downloads ~900MB and builds the mirror, one command
+collective init              # downloads ~900MB and builds the mirror
+collective web --open        # the explorer
 ```
 
 No `uv` or `pipx`? A plain venv works too — `python3 -m venv .venv &&
@@ -94,38 +106,38 @@ https://cdn.learningcommons.org/knowledge-graph/v1.12.0/exports/relationships.js
 Then:
 
 ```bash
-learning-net status                                    # what is in it, which upstream release
-learning-net query crosswalk standard=4.OA.A.3 toJurisdiction=Texas
-learning-net update                                    # is there a newer release?
-learning-net sync --version 1.13.0 --changelog cl.json # fetch, diff, report, rebuild
+collective status                                    # what is in it, which upstream release
+collective query crosswalk standard=4.OA.A.3 toJurisdiction=Texas
+collective update                                    # is there a newer release?
+collective sync --version 1.13.0 --changelog cl.json # fetch, diff, report, rebuild
 ```
 
-Already have the export files? `learning-net build <dir>` skips the download.
+Already have the export files? `collective build <dir>` skips the download.
 
 ### No pip? One file.
 
 The core is stdlib-only, so the whole tool also ships as a single-file
 [zipapp](https://docs.python.org/3/library/zipapp.html). If `pip` is unavailable or
-forbidden on your machine, download `learning-net.pyz` from the
-[latest release](https://github.com/interrealm-io/learning-net/releases/latest) and run it
+forbidden on your machine, download `collective.pyz` from the
+[latest release](https://github.com/interwax/collective/releases/latest) and run it
 with the Python you already have — nothing to install, nothing on PATH:
 
 ```bash
-python3 learning-net.pyz init
-python3 learning-net.pyz status --db data/kg.sqlite
+python3 collective.pyz init
+python3 collective.pyz status --db data/kg.sqlite
 ```
 
-Every command works the same way: wherever the docs say `learning-net`, say
-`python3 learning-net.pyz`. To build it from a checkout, run `make pyz`.
+Every command works the same way: wherever the docs say `collective`, say
+`python3 collective.pyz`. To build it from a checkout, run `make pyz`.
 
 Point any MCP client at it:
 
 ```json
 {
   "mcpServers": {
-    "learning-net": {
-      "command": "learning-net",
-      "args": ["serve", "--db", "/srv/learning-net/data/kg.sqlite"]
+    "collective": {
+      "command": "collective",
+      "args": ["serve", "--db", "/srv/collective/data/kg.sqlite"]
     }
   }
 }
@@ -133,7 +145,7 @@ Point any MCP client at it:
 
 (With the zipapp, use `"command": "python3"` and put the `.pyz` path first in `args`.)
 
-Or browse it. `learning-net web --open` serves a local explorer — full-text search,
+Or browse it. `collective web --open` serves a local explorer — full-text search,
 standard detail with prerequisites and aligned curriculum, cross-state crosswalk,
 and a status dashboard — over the **same nine queries** the MCP tools answer, so
 the two surfaces cannot disagree. Every answer that crossed the Multi-State spine
@@ -149,10 +161,10 @@ needed only to `sync`, and even that is optional if the export arrives another w
 
 Upstream is in private beta and says so. A mirror that silently absorbs a schema change
 is worse than no mirror: it will keep answering confidently from a shape that no longer
-matches reality. Learning Net is designed to fail loudly instead — sync detects, diffs,
+matches reality. Collective is designed to fail loudly instead — sync detects, diffs,
 and reports schema drift rather than masking it.
 
-So `learning-net sync` compares the **structure** of a new export against the live
+So `collective sync` compares the **structure** of a new export against the live
 mirror — labels, edge types, triple patterns, property coverage — and classifies what
 moved:
 
@@ -184,7 +196,7 @@ instances. See [docs/federation.md](docs/federation.md).
 
 The **code** is Apache-2.0. The **data** is Learning Commons' work, published under
 CC BY-4.0, and every node and edge carries its own `license` and a per-jurisdiction
-`attributionStatement` naming the source department. Learning Net preserves both,
+`attributionStatement` naming the source department. Collective preserves both,
 verbatim, and surfaces them in every export path. Redistribution with attribution is
 what CC BY-4.0 grants; this project exercises exactly that and nothing more. See
 [DATA-LICENSE.md](DATA-LICENSE.md).
@@ -192,23 +204,23 @@ what CC BY-4.0 grants; this project exercises exactly that and nothing more. See
 Upstream publishes the exports on a public CDN with no credential and no gate, so
 mirroring requires nothing beyond the license they already granted. Their authenticated
 MCP API is a separate surface governed by whatever agreement you have with them —
-Learning Net does not touch it.
+Collective does not touch it.
 
 ## Governance
 
-Learning Net is stewarded by the **InterRealm Foundation** as non-profit open
+Collective is stewarded by the **InterRealm Foundation** as non-profit open
 infrastructure for educational AI. It is not a commercial open-core product and there
 is no paid tier. What is and is not in scope — and specifically what happens to a
 school's own curriculum if they put it in a mirror — is written down in
 [GOVERNANCE.md](GOVERNANCE.md) rather than left to trust.
 
-Learning Net is authored and maintained by **Duncan Krebs**, Founder and Executive
+Collective is authored and maintained by **Duncan Krebs**, Founder and Executive
 Director of the InterRealm Foundation. Questions about scope, stewardship, or pilot
 use: [hello@interrealm.org](mailto:hello@interrealm.org).
 
 ## Roadmap
 
-- **PyPI release** — so `uv tool install learning-net` works without a checkout.
+- **PyPI release** — so `uv tool install collective` works without a checkout.
 - **Local extension** — a school's own curriculum aligned against the shared
   spine, in a separate table so `sync` never clobbers it.
 - **Federation tooling** — shared-spine merges across instances; the groundwork
@@ -227,7 +239,7 @@ use: [hello@interrealm.org](mailto:hello@interrealm.org).
 This project exists because Learning Commons did the hard part. Aggregating,
 normalizing, and openly licensing the standards of 52 jurisdictions is years of
 unglamorous work, and publishing it under CC BY-4.0 was a choice they did not have to
-make. Learning Net is a distribution layer on top of that, built in the spirit the
+make. Collective is a distribution layer on top of that, built in the spirit the
 license invites.
 
 ---

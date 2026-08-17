@@ -11,8 +11,8 @@ import urllib.request
 
 import pytest
 
-from learningnet.server import _prune
-from learningnet.web import make_server
+from collective.server import _prune
+from collective.web import make_server
 
 
 @pytest.fixture
@@ -109,7 +109,7 @@ def test_concurrent_requests_do_not_break_sqlite(served):
 def test_static_serves_app_shell(served):
     from importlib import resources
 
-    if not (resources.files("learningnet") / "static" / "index.html").is_file():
+    if not (resources.files("collective") / "static" / "index.html").is_file():
         pytest.skip("web bundle not built yet")
     with urllib.request.urlopen(f"{served}/") as r:
         assert r.status == 200

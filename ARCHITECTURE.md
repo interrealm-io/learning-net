@@ -43,7 +43,7 @@ an SDK.
 This is a deployment constraint, not minimalism for its own sake. The target is a
 school district: stock Python, no build toolchain, possibly no outbound network from
 the box that will run it, and an admin who has to justify every package. `pip install
-learning-net && learning-net serve` has to be the whole story. Network, web, and dev
+collective && collective serve` has to be the whole story. Network, web, and dev
 tooling live behind optional extras.
 
 ## The topology, and why the code is shaped around it
@@ -86,7 +86,7 @@ The v5 property is what makes federation mechanically possible; see
 
 ## The web explorer
 
-`learning-net web` is a stdlib `ThreadingHTTPServer` with two jobs: serve the
+`collective web` is a stdlib `ThreadingHTTPServer` with two jobs: serve the
 nine tools as `GET /api/<tool>` — the handler table is **imported from the MCP
 server**, not reimplemented, which is what "same methods, no second
 implementation" means in practice — and serve a prebuilt React bundle as
@@ -117,7 +117,7 @@ is why it has real test coverage while fetch does not.
 ## Provenance
 
 Every mirror carries a `meta` table: build timestamp, source, node and edge counts, and
-the SHA-256 of each source file. `learning-net status` and the `graph_stats` MCP tool
+the SHA-256 of each source file. `collective status` and the `graph_stats` MCP tool
 both surface it.
 
 A mirror that cannot say how stale it is has no business being trusted, so this is part

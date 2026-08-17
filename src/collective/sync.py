@@ -1,4 +1,4 @@
-"""Sync a Learning Net mirror against upstream Learning Commons.
+"""Sync a Collective mirror against upstream Learning Commons.
 
 Three halves, deliberately separable:
 
@@ -40,7 +40,7 @@ import urllib.request
 CDN_BASE = os.environ.get("LEARNING_COMMONS_CDN", "https://cdn.learningcommons.org")
 DEFAULT_VERSION = os.environ.get("LEARNING_COMMONS_KG_VERSION", "1.12.0")
 EXPORTS = ("nodes.jsonl", "relationships.jsonl")
-USER_AGENT = "learning-net/0.1.0 (+https://github.com/interrealm/learning-net)"
+USER_AGENT = "collective/0.1.0 (+https://github.com/interwax/collective)"
 
 
 def export_url(name, version=DEFAULT_VERSION, base=CDN_BASE):
@@ -48,7 +48,7 @@ def export_url(name, version=DEFAULT_VERSION, base=CDN_BASE):
     # `ref` is upstream's attribution/analytics parameter — worth sending so
     # Learning Commons can see this traffic is a mirror rather than scraping.
     # Only meaningful over http(s); a file:// base is used by the tests.
-    return url + "?ref=learning-net" if base.startswith("http") else url
+    return url + "?ref=collective" if base.startswith("http") else url
 
 
 # ---------------------------------------------------------------------------
@@ -334,7 +334,7 @@ def changelog(findings, from_version, to_version):
         "fromVersion": from_version,
         "toVersion": to_version,
         "generatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "generatedBy": "learning-net",
+        "generatedBy": "collective",
         "breaking": [f for f in findings if f["severity"] == BREAKING],
         "additive": [f for f in findings if f["severity"] == ADDITIVE],
         "info": [f for f in findings if f["severity"] == INFO],
