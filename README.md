@@ -1,4 +1,4 @@
-# Collective
+# Learning Net
 
 **A self-hostable mirror, MCP server, and explorer for the Learning Commons Knowledge Graph.**
 An independent, open-source **extension to the [Learning Commons Platform](https://www.learningcommons.org)**.
@@ -8,12 +8,12 @@ standards across 52 US jurisdictions, the granular learning components beneath t
 the alignments between them, and curriculum mapped onto them — 283,381 nodes and
 492,169 edges, published under CC BY-4.0.
 
-Collective makes that graph something a school can **run**. Sync it, host it, query
+Learning Net makes that graph something a school can **run**. Sync it, host it, query
 it, explore it, extend it. No network round-trip per lookup, no rate limit, no single
 point of failure, and no requirement that anyone else's server be up for a classroom
 to work.
 
-Commons is the collection. Collective is the distribution.
+Commons is the collection. Learning Net is the distribution.
 
 > **Status: alpha.** Upstream is in private beta and explicitly evolving with breaking
 > changes. Sync reports schema drift rather than absorbing it — see
@@ -43,14 +43,14 @@ That is one of three topology facts that decide whether a query returns anything
    likewise point only at Multi-State Mathematics.
 
 None of this is documented, and all of it is discoverable only by getting an empty
-result and not believing it. Collective encodes all three, bridges automatically,
+result and not believing it. Learning Net encodes all three, bridges automatically,
 and **tells you when it bridged** — every result that crossed the spine says
 `bridgedViaMultiState` or `viaMultiStateHub`, so you can always separate what the data
 says from what the tool inferred.
 
 ## What you get
 
-| Feature | Hosted KG | Collective |
+| Feature | Hosted KG | Learning Net |
 | :--- | :---: | :---: |
 | Resolve a standard code | Yes | **Yes** |
 | Learning components | Yes | **Yes** |
@@ -60,7 +60,7 @@ says from what the tool inferred.
 | Framework context (ancestors, children) | — | **Yes** |
 | Aligned curriculum | — | **Yes, auto-bridged** |
 | Raw node access | — | **Yes** |
-| Browse it in a web UI | — | **Yes**, `collective web` |
+| Browse it in a web UI | — | **Yes**, `Learning Net web` |
 | Works offline | — | **Yes** |
 | Runs on your hardware | — | **Yes** |
 | Says which upstream release it is | — | **Yes** |
@@ -72,7 +72,7 @@ overhead — no key, no rate limit, no network round-trip per lookup.
 ## Quick start
 
 ```bash
-git clone https://github.com/interwax/collective && cd collective
+git clone https://github.com/interwax/Learning Net && cd collective
 python3 demo.py              # Windows: py demo.py
 ```
 
