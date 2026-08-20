@@ -57,6 +57,48 @@ def _grade(v):
         return str(v)
 
 
+def _grade_list(v):
+    """gradeLevel as a list of individual grade strings."""
+    g = _grade(v)
+    return g.split(",") if g else []
+
+
+_GRADE_ORDINALS = {"PK": -1, "PRE-K": -1, "PREK": -1, "TK": -1, "K": 0, "KG": 0}
+
+
+def _grade_ordinal(g):
+    """'K' -> 0, '5' -> 5, unparseable -> None. For ordering and comparison."""
+    if g is None:
+        return None
+    g = str(g).strip().upper()
+    if g in _GRADE_ORDINALS:
+        return _GRADE_ORDINALS[g]
+    try:
+        return int(g)
+    except ValueError:
+        return None
+
+
+def _grade_sort_key(g):
+    o = _grade_ordinal(str(g).split(",")[0])
+    return (o is None, o if o is not None else 0, str(g))
+
+
+def _examples(props_json):
+    """The worked examples on a LearningComponent, if any.
+
+    Upstream stores them as a JSON-encoded string inside the property bag
+    ('examples': '["big ball"]'), so this decodes twice.
+    """
+    try:
+        ex = json.loads(props_json).get("examples")
+        if isinstance(ex, str):
+            ex = json.loads(ex)
+        return ex if isinstance(ex, list) and ex else None
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+
 def _brief(r):
     out = {
         "id": r["id"],
@@ -111,13 +153,29 @@ class Graph:
         if not ref:
             return []
         for col in ("id", "case_uuid", "statement_code"):
-            hits = self._rows(f"SELECT {NODE_COLS} FROM nodes WHERE {col} = ?", (ref,))
+            # A bare code matches one node per adopting jurisdiction; the spine
+            # sorts first so an undisambiguated lookup lands where the graph's
+            # connectivity actually is, not on an arbitrary state.
+            hits = self._rows(
+                f"SELECT {NODE_COLS} FROM nodes WHERE {col} = ? "
+                "ORDER BY (jurisdiction = 'Multi-State') DESC, jurisdiction",
+                (ref,),
+            )
             if hits:
                 return hits
         return []
 
-    def _one(self, ref):
+    def _one(self, ref, jurisdiction=None):
         hits = self.resolve(ref)
+        if jurisdiction and hits:
+            canon, _ = self.resolve_jurisdiction(jurisdiction)
+            wanted = [h for h in hits if h["jurisdiction"] == (canon or jurisdiction)]
+            if not wanted:
+                raise GraphError(
+                    f"{ref!r} matches no standard in {jurisdiction!r} — it exists in: "
+                    + ", ".join(sorted({h['jurisdiction'] or '?' for h in hits})[:8])
+                )
+            hits = wanted
         if not hits:
             raise GraphError(
                 f"no node matches {ref!r} — try find_standard or search_standards first"
@@ -201,20 +259,277 @@ class Graph:
             "results": [_brief(r) for r in found],
         }
 
-    def learning_components(self, standard):
-        n = self._one(standard)
-        comps = self._rows(
-            f"SELECT {_N} FROM edges e JOIN nodes n ON n.id = e.src "
-            "WHERE e.dst = ? AND e.label = 'supports' AND e.src_label = 'LearningComponent'",
-            (n["id"],),
-        )
+    def _with_descendants(self, node, depth=3):
+        """The node plus its hasChild descendants, breadth-first, bounded."""
+        out, frontier = [node], [node]
+        for _ in range(depth):
+            nxt = []
+            for f in frontier:
+                nxt += self._rows(
+                    f"SELECT {_N} FROM edges e JOIN nodes n ON n.id = e.dst "
+                    "WHERE e.src = ? AND e.label = 'hasChild'",
+                    (f["id"],),
+                )
+            if not nxt:
+                break
+            out += nxt
+            frontier = nxt
+        return out
+
+    def _components_of(self, root):
+        """(component_row, supporting_standard) pairs for root and its descendants.
+
+        Components attach to the finest-grained standard — often a lettered
+        child like L.2.1.e — so asking the parent must look downward too.
+        """
+        out, seen = [], set()
+        for s in self._with_descendants(root):
+            for c in self._rows(
+                f"SELECT {_N}, n.props FROM edges e JOIN nodes n ON n.id = e.src "
+                "WHERE e.dst = ? AND e.label = 'supports' "
+                "AND e.src_label = 'LearningComponent'",
+                (s["id"],),
+            ):
+                if c["id"] not in seen:
+                    seen.add(c["id"])
+                    out.append((c, s))
+        return out
+
+    def learning_components(self, standard, jurisdiction=None):
+        n = self._one(standard, jurisdiction)
+        pairs, bridged = self._components_of(n), False
+        if not pairs and n["jurisdiction"] != MULTI_STATE:
+            # Component edges exist for only some jurisdictions. The rest reach
+            # them the same way progressions do: through the Multi-State spine.
+            anchors, _ = self._spine_anchors(n)
+            seen = set()
+            for a in anchors:
+                for c, s in self._components_of(a):
+                    if c["id"] not in seen:
+                        seen.add(c["id"])
+                        pairs.append((c, s))
+            bridged = bool(pairs)
+
+        comps = []
+        for c, s in pairs:
+            entry = {"id": c["id"], "component": c["description"], "subject": c["subject"]}
+            ex = _examples(c["props"])
+            if ex:
+                entry["examples"] = ex
+            if s["id"] != n["id"]:
+                entry["supportsStandard"] = s["statement_code"] or s["id"]
+            comps.append(entry)
+
         return {
             "standard": _brief(n),
             "componentCount": len(comps),
-            "learningComponents": [
-                {"id": c["id"], "component": c["description"], "subject": c["subject"]}
-                for c in comps
-            ],
+            "bridgedViaMultiState": bridged,
+            "note": (
+                "No learning components reach this standard, its children, or its "
+                "Multi-State equivalent. Component coverage varies by subject and "
+                "grade — use search_learning_components to find what exists for a "
+                "topic, or coverage_report for the map."
+            )
+            if not comps
+            else None,
+            "learningComponents": comps,
+        }
+
+    def list_standards(
+        self, jurisdiction=None, subject=None, grade_level=None, limit=100, offset=0
+    ):
+        """Faceted browse: pick a state, a grade, a subject — no search text needed.
+
+        The drill-down entry point search_standards cannot be, because FTS
+        requires words to match. Facet counts describe the whole filtered set,
+        so a UI can offer the next narrowing step without a second query.
+        """
+        if not (jurisdiction or subject or grade_level):
+            raise GraphError(
+                "pass at least one of jurisdiction, subject, or gradeLevel — "
+                "listing all 258k standards helps nobody"
+            )
+        where, p = ["label = 'StandardsFrameworkItem'"], []
+        if jurisdiction:
+            canon, suggestions = self.resolve_jurisdiction(jurisdiction)
+            if not canon:
+                raise GraphError(
+                    f"unknown jurisdiction {jurisdiction!r} — did you mean: "
+                    f"{', '.join(suggestions)}?"
+                )
+            jurisdiction = canon
+            where.append("jurisdiction = ?")
+            p.append(canon)
+        if subject:
+            where.append("subject = ?")
+            p.append(subject)
+        if grade_level:
+            where.append("grade_level LIKE ?")
+            p.append(f'%"{grade_level}"%')
+        w = " AND ".join(where)
+
+        total = self._rows(f"SELECT COUNT(*) FROM nodes WHERE {w}", p)[0][0]
+        subjects = dict(
+            self._rows(
+                f"SELECT subject, COUNT(*) FROM nodes WHERE {w} "
+                "AND subject IS NOT NULL GROUP BY 1 ORDER BY 2 DESC",
+                p,
+            )
+        )
+        grades = collections.Counter()
+        for gl, cnt in self._rows(
+            f"SELECT grade_level, COUNT(*) FROM nodes WHERE {w} "
+            "AND grade_level IS NOT NULL GROUP BY 1",
+            p,
+        ):
+            grades[_grade(gl)] += cnt
+        grades = dict(sorted(grades.items(), key=lambda kv: _grade_sort_key(kv[0])))
+
+        rows = self._rows(
+            f"SELECT {NODE_COLS}, (SELECT COUNT(*) FROM edges e WHERE e.dst = nodes.id "
+            "AND e.label = 'supports' AND e.src_label = 'LearningComponent') AS lc_count "
+            f"FROM nodes WHERE {w} "
+            "ORDER BY subject, statement_code IS NULL, statement_code LIMIT ? OFFSET ?",
+            p + [limit, offset],
+        )
+        out = []
+        for r in rows:
+            b = _brief(r)
+            if r["lc_count"]:
+                b["learningComponentCount"] = r["lc_count"]
+            out.append(b)
+
+        return {
+            "filters": {
+                "jurisdiction": jurisdiction,
+                "subject": subject,
+                "gradeLevel": grade_level,
+            },
+            "totalCount": total,
+            "returned": len(out),
+            "offset": offset,
+            "facets": {"subjects": subjects, "gradeLevels": grades},
+            "standards": out,
+        }
+
+    def search_learning_components(
+        self, query, jurisdiction=None, grade_level=None, limit=30
+    ):
+        """Search the granular skills themselves, mapped back to standards.
+
+        Learning components carry no grade or jurisdiction of their own — both
+        are derivable only through the standards they support. So each hit is
+        mapped to supporting standards (in the requested jurisdiction where
+        possible, bridging via the Multi-State hub where not) and, when a grade
+        is given, labelled at/below/above it. Below-grade hits are foundational
+        skills for the topic, not noise: a 5th grader studying adjectives needs
+        the K-2 components, because that is where upstream authored them.
+        """
+        canon = None
+        if jurisdiction:
+            canon, suggestions = self.resolve_jurisdiction(jurisdiction)
+            if not canon:
+                raise GraphError(
+                    f"unknown jurisdiction {jurisdiction!r} — did you mean: "
+                    f"{', '.join(suggestions)}?"
+                )
+        want = _grade_ordinal(grade_level) if grade_level else None
+
+        hits = self._rows(
+            f"SELECT {_N}, n.props FROM nodes_fts f JOIN nodes n ON n.id = f.id "
+            "WHERE nodes_fts MATCH ? AND n.label = 'LearningComponent' "
+            "ORDER BY bm25(nodes_fts) LIMIT ?",
+            (_fts_query(query), limit),
+        )
+
+        out, unmapped = [], 0
+        for lc in hits:
+            supported = self._rows(
+                f"SELECT {_N} FROM edges e JOIN nodes n ON n.id = e.dst "
+                "WHERE e.src = ? AND e.label = 'supports'",
+                (lc["id"],),
+            )
+            via_ms = False
+            local = [s for s in supported if s["jurisdiction"] == canon] if canon else supported
+            if canon and not local:
+                # No direct edge into this state. Map the Multi-State targets
+                # down through alignment — trying each target's parent too,
+                # since alignments are often authored at the parent standard.
+                seen, candidates = set(), []
+                for s in supported:
+                    if s["jurisdiction"] != MULTI_STATE:
+                        continue
+                    candidates.append(s)
+                    candidates += self._rows(
+                        f"SELECT {_N} FROM edges e JOIN nodes n ON n.id = e.src "
+                        "WHERE e.dst = ? AND e.label = 'hasChild' LIMIT 1",
+                        (s["id"],),
+                    )
+                for cand in candidates:
+                    for a in self._aligned(cand["id"]):
+                        if a["jurisdiction"] == canon and a["id"] not in seen:
+                            seen.add(a["id"])
+                            local.append(a)
+                via_ms = bool(local)
+            if canon and not local:
+                unmapped += 1
+                continue
+
+            grades = sorted(
+                {g for s in local for g in _grade_list(s["grade_level"])},
+                key=_grade_sort_key,
+            )
+            entry = {
+                "id": lc["id"],
+                "component": lc["description"],
+                "subject": lc["subject"],
+            }
+            ex = _examples(lc["props"])
+            if ex:
+                entry["examples"] = ex
+            if grades:
+                entry["gradeLevels"] = grades
+            if want is not None:
+                ords = [o for o in map(_grade_ordinal, grades) if o is not None]
+                if ords:
+                    if want in ords:
+                        entry["gradeRelation"] = "at"
+                    elif max(ords) < want:
+                        entry["gradeRelation"] = "below"
+                    elif min(ords) > want:
+                        entry["gradeRelation"] = "above"
+                    else:
+                        entry["gradeRelation"] = "spans"
+            entry["supportsStandards"] = [_brief(s) for s in local[:6]]
+            if via_ms:
+                entry["viaMultiStateHub"] = True
+            out.append(entry)
+
+        rank = {"at": 0, "spans": 1, "below": 2, "above": 3}
+        if want is not None:
+            out.sort(key=lambda e: rank.get(e.get("gradeRelation"), 4))
+        at_grade = sum(1 for e in out if e.get("gradeRelation") == "at")
+
+        return {
+            "query": query,
+            "jurisdiction": canon,
+            "gradeLevel": grade_level,
+            "resultCount": len(out),
+            "unmappedCount": unmapped or None,
+            "note": (
+                f"No components for this topic are authored at grade "
+                f"{grade_level}. The below-grade results are the foundational "
+                f"skills for the topic — appropriate source material for review "
+                f"and study aids, per standard practice on unfinished learning."
+            )
+            if want is not None and out and not at_grade
+            else (
+                f"{unmapped} component(s) matched but support no standard in "
+                f"{canon}, directly or via the Multi-State hub, and were omitted."
+                if unmapped
+                else None
+            ),
+            "components": out,
         }
 
     def progression(self, standard, direction="backward", limit=25):

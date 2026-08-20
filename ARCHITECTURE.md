@@ -87,7 +87,7 @@ The v5 property is what makes federation mechanically possible; see
 ## The web explorer
 
 `collective web` is a stdlib `ThreadingHTTPServer` with two jobs: serve the
-nine tools as `GET /api/<tool>` — the handler table is **imported from the MCP
+thirteen tools as `GET /api/<tool>` — the handler table is **imported from the MCP
 server**, not reimplemented, which is what "same methods, no second
 implementation" means in practice — and serve a prebuilt React bundle as
 static files.

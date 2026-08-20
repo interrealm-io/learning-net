@@ -1,6 +1,6 @@
 """HTTP server for the web explorer.
 
-Serves the same nine tools as the MCP server — the handler table is imported
+Serves the same tools as the MCP server — the handler table is imported
 from server.py, not reimplemented, so the two surfaces cannot drift — plus the
 built React bundle as static files.
 
@@ -27,7 +27,7 @@ from .server import _handlers, _prune
 DEFAULT_PORT = 8788
 
 # The only integer-typed params in the tool schemas; everything else is text.
-_INT_PARAMS = {"limit", "maxDepth", "childLimit"}
+_INT_PARAMS = {"limit", "maxDepth", "childLimit", "offset"}
 
 
 def _coerce(query_string):
