@@ -4,8 +4,8 @@ Speaks MCP over stdio with nothing but the standard library — no SDK, no pip
 install, no network. That constraint is deliberate: the point of a mirror is
 that a school can run it on hardware and a Python install it already has.
 
-All eleven tools are thin wrappers over `graph.Graph`. The HTTP API serves the
-same methods, so the two surfaces cannot drift.
+All thirteen tools are thin wrappers over `graph.Graph`. The HTTP API serves
+the same methods, so the two surfaces cannot drift.
 """
 
 from __future__ import annotations
@@ -126,15 +126,70 @@ TOOLS = [
         },
     },
     {
+        "name": "list_standards",
+        "description": (
+            "Browse standards by facet — state, grade, subject — with no search text "
+            "or code needed. The drill-down entry point: pick a jurisdiction, then a "
+            "grade, then follow a statement code into get_standard_context or "
+            "get_learning_components. Returns facet counts for the filtered set plus "
+            "a page of standards, each with its learning-component count so you can "
+            "see where granular material exists. At least one filter is required."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "jurisdiction": {"type": "string", "description": "e.g. 'Michigan'"},
+                "subject": {"type": "string", "description": "e.g. 'Mathematics'"},
+                "gradeLevel": {"type": "string", "description": "Single grade, e.g. '5' or 'K'"},
+                "limit": {"type": "integer", "default": 100},
+                "offset": {"type": "integer", "default": 0},
+            },
+        },
+    },
+    {
         "name": "get_learning_components",
         "description": (
-            "Break a standard into the granular teachable skills that support it. "
+            "Break a standard into the granular teachable skills that support it, "
+            "each with worked examples — the right grain size for practice items, "
+            "flashcards, and study aids. Looks through the standard's children "
+            "(components usually attach to lettered sub-standards) and bridges via "
+            "the Multi-State spine when a state standard carries none directly. "
             "Accepts an internal id, a caseIdentifierUUID, or a bare statement code."
         ),
         "inputSchema": {
             "type": "object",
-            "properties": {"standard": {"type": "string"}},
+            "properties": {
+                "standard": {"type": "string"},
+                "jurisdiction": {
+                    "type": "string",
+                    "description": "Disambiguates a bare code, e.g. 'Michigan'. "
+                    "Without it a shared code resolves to the Multi-State spine.",
+                },
+            },
             "required": ["standard"],
+        },
+    },
+    {
+        "name": "search_learning_components",
+        "description": (
+            "Full-text search over the granular learning components themselves — the "
+            "'identify an adjective in a written sentence' level, each with worked "
+            "examples. Use this to gather material for flashcards and study aids on "
+            "a topic. Components carry no grade or state of their own, so each hit "
+            "is mapped to the standards it supports (in your jurisdiction if given, "
+            "bridged via Multi-State where needed) and labelled at/below/above the "
+            "requested grade. Below-grade hits are the topic's foundational skills, "
+            "not noise — for many topics that is where all the components live."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Topic or wording, e.g. 'adjective'"},
+                "jurisdiction": {"type": "string", "description": "e.g. 'Michigan'"},
+                "gradeLevel": {"type": "string", "description": "Single grade, e.g. '5' or 'K'"},
+                "limit": {"type": "integer", "default": 30},
+            },
+            "required": ["query"],
         },
     },
     {
@@ -237,7 +292,13 @@ def _handlers(g: Graph):
         ),
         "search_standards": lambda query, jurisdiction=None, subject=None, gradeLevel=None,
         limit=20: g.search_standards(query, jurisdiction, subject, gradeLevel, limit),
-        "get_learning_components": lambda standard: g.learning_components(standard),
+        "list_standards": lambda jurisdiction=None, subject=None, gradeLevel=None,
+        limit=100, offset=0: g.list_standards(jurisdiction, subject, gradeLevel, limit, offset),
+        "get_learning_components": lambda standard, jurisdiction=None: (
+            g.learning_components(standard, jurisdiction)
+        ),
+        "search_learning_components": lambda query, jurisdiction=None, gradeLevel=None,
+        limit=30: g.search_learning_components(query, jurisdiction, gradeLevel, limit),
         "get_progression": lambda standard, direction="backward", limit=25: g.progression(
             standard, direction, limit
         ),

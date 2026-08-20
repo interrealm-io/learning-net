@@ -20,6 +20,16 @@ def test_resolve_accepts_code_or_id(mirror):
     assert mirror.resolve("4.OA.A.3")
 
 
+def test_bare_code_resolves_to_spine_not_arbitrary_state(mirror):
+    assert mirror.resolve("4.OA.A.3")[0]["jurisdiction"] == "Multi-State"
+
+
+def test_components_accept_jurisdiction_to_disambiguate_code(mirror):
+    r = mirror.learning_components("L.2.1", jurisdiction="California")
+    assert r["standard"]["jurisdiction"] == "California"
+    assert r["bridgedViaMultiState"] is True
+
+
 def test_progression_bridges_state_through_spine(mirror):
     """The whole reason this project exists: a one-hop query returns nothing."""
     r = mirror.progression("ca-1", "backward")
@@ -53,9 +63,84 @@ def test_curriculum_bridges_to_spine(mirror):
     assert r["curriculum"][0]["type"] == "Lesson"
 
 
-def test_components_do_not_bridge(mirror):
+def test_components_direct_do_not_bridge(mirror):
     r = mirror.learning_components("ca-1")
     assert r["componentCount"] == 1
+    assert r["bridgedViaMultiState"] is False
+
+
+def test_components_roll_up_from_child_standards(mirror):
+    """Components attach to lettered children; asking the parent must find them."""
+    r = mirror.learning_components("ms-ela")
+    assert r["componentCount"] == 1
+    c = r["learningComponents"][0]
+    assert c["supportsStandard"] == "L.2.1.e"
+    assert c["examples"] == ["Underlines big in 'The big dog barks.'"]
+
+
+def test_components_bridge_state_through_spine(mirror):
+    """A state standard with no direct component edges reaches the spine's."""
+    r = mirror.learning_components("ca-ela")
+    assert r["bridgedViaMultiState"] is True
+    assert r["componentCount"] == 1
+    assert "adjective" in r["learningComponents"][0]["component"]
+
+
+def test_components_absent_is_reported_not_silent(mirror):
+    r = mirror.learning_components("tx-1")
+    assert r["componentCount"] == 0
+    assert "search_learning_components" in r["note"]
+
+
+def test_list_standards_facets_and_filters(mirror):
+    r = mirror.list_standards(jurisdiction="California")
+    assert r["totalCount"] == 2
+    assert r["facets"]["subjects"] == {"English Language Arts": 1, "Mathematics": 1}
+    assert r["facets"]["gradeLevels"] == {"2": 1, "4": 1}
+    narrowed = mirror.list_standards(jurisdiction="california", grade_level="2")
+    assert [s["statementCode"] for s in narrowed["standards"]] == ["L.2.1"]
+
+
+def test_list_standards_reports_component_counts(mirror):
+    by_code = {
+        s["statementCode"]: s
+        for s in mirror.list_standards(jurisdiction="California")["standards"]
+    }
+    assert by_code["4.OA.A.3"]["learningComponentCount"] == 1  # lc-1 supports ca-1
+    assert "learningComponentCount" not in by_code["L.2.1"]  # reachable only by bridge
+
+
+def test_list_standards_requires_a_filter(mirror):
+    from collective.graph import GraphError
+
+    with pytest.raises(GraphError):
+        mirror.list_standards()
+
+
+def test_search_components_maps_to_jurisdiction_via_hub(mirror):
+    """lc-adj supports only the spine's L.2.1.e; California is two hops away."""
+    r = mirror.search_learning_components("adjective", jurisdiction="California")
+    assert r["resultCount"] == 1
+    c = r["components"][0]
+    assert c["viaMultiStateHub"] is True
+    assert [s["statementCode"] for s in c["supportsStandards"]] == ["L.2.1"]
+    assert c["examples"]
+
+
+def test_search_components_labels_grade_relation(mirror):
+    r = mirror.search_learning_components(
+        "adjective", jurisdiction="California", grade_level="5"
+    )
+    assert r["components"][0]["gradeRelation"] == "below"
+    assert "foundational" in r["note"]
+
+
+def test_search_components_drops_and_counts_unmappable(mirror):
+    """A jurisdiction the component cannot reach is reported, not silently empty."""
+    r = mirror.search_learning_components("adjective", jurisdiction="Texas")
+    assert r["resultCount"] == 0
+    assert r["unmappedCount"] == 1
+    assert "Texas" in r["note"]
 
 
 def test_search_is_literal_not_fts_syntax(mirror):
@@ -242,6 +327,14 @@ def test_bad_jurisdiction_suggests_rather_than_erroring(mirror):
     assert r["verdict"] in ("unknown_jurisdiction", "equivalent_exists")
 
 
+def test_browse_and_component_search_are_mcp_tools():
+    from collective.server import TOOLS
+
+    names = [t["name"] for t in TOOLS]
+    assert "list_standards" in names
+    assert "search_learning_components" in names
+
+
 def test_verify_is_exposed_as_an_mcp_tool():
     from collective.server import TOOLS
 
@@ -258,7 +351,7 @@ def test_coverage_flags_jurisdictions_with_no_alignment(mirror):
     """A state with standards but no alignment edges is the finding that matters."""
     rep = mirror.coverage_report()
     by = {r["jurisdiction"]: r for r in rep["byJurisdiction"]}
-    assert by["California"]["crosswalked"] == 1
+    assert by["California"]["crosswalked"] == 2  # ca-1 and ca-ela
     assert by["California"]["isolated"] is False
     assert rep["national"]["jurisdictions"] == 3
 

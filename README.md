@@ -53,9 +53,11 @@ says from what the tool inferred.
 | Feature | Hosted KG | Learning Net |
 | :--- | :---: | :---: |
 | Resolve a standard code | Yes | **Yes** |
-| Learning components | Yes | **Yes** |
+| Learning components | Yes | **Yes, rolled up + auto-bridged, with worked examples** |
 | Progressions | Yes, one hop | **Yes, auto-bridged** |
 | Full-text search across all statements | — | **Yes** |
+| Search learning components by topic | — | **Yes, mapped to your state + grade** |
+| Browse by state / grade / subject facets | — | **Yes** |
 | Cross-jurisdiction crosswalk | — | **Yes, auto two-hop** |
 | Framework context (ancestors, children) | — | **Yes** |
 | Aligned curriculum | — | **Yes, auto-bridged** |
@@ -147,7 +149,7 @@ Point any MCP client at it:
 
 Or browse it. `collective web --open` serves a local explorer — full-text search,
 standard detail with prerequisites and aligned curriculum, cross-state crosswalk,
-and a status dashboard — over the **same nine queries** the MCP tools answer, so
+and a status dashboard — over the **same thirteen queries** the MCP tools answer, so
 the two surfaces cannot disagree. Every answer that crossed the Multi-State spine
 wears a visible "inferred" badge in the UI, same as in the JSON. The UI is a
 prebuilt bundle that ships inside the package: no Node, no build step, stdlib

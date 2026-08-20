@@ -45,6 +45,22 @@ def mirror(tmp_path):
               description="Solve multi-step real-world problems."),
         _node("les-1", "Lesson", name="Multi-Step Measurement Problems",
               academicSubject="Mathematics", gradeLevel='["4"]'),
+        # ELA mirrors the real component topology: components attach to a
+        # lettered CHILD standard on the spine, and a state reaches them only
+        # through its alignment to the parent.
+        _node("ms-ela", "StandardsFrameworkItem", statementCode="L.2.1",
+              jurisdiction="Multi-State", academicSubject="English Language Arts",
+              gradeLevel='["2"]', description="Demonstrate command of the conventions "
+              "of standard English grammar and usage."),
+        _node("ms-ela-e", "StandardsFrameworkItem", statementCode="L.2.1.e",
+              jurisdiction="Multi-State", academicSubject="English Language Arts",
+              gradeLevel='["2"]', description="Use adjectives and adverbs."),
+        _node("ca-ela", "StandardsFrameworkItem", statementCode="L.2.1",
+              jurisdiction="California", academicSubject="English Language Arts",
+              gradeLevel='["2"]', description="Use adjectives and adverbs correctly."),
+        _node("lc-adj", "LearningComponent", academicSubject="English Language Arts",
+              description="Identify an adjective in a written sentence.",
+              examples='["Underlines big in \'The big dog barks.\'"]'),
     ]
     con.executemany("INSERT INTO nodes VALUES(?,?,?,?,?,?,?,?,?,?,?)", nodes)
     con.executemany("INSERT INTO edges VALUES(?,?,?,?,?,?)", [
@@ -60,6 +76,13 @@ def mirror(tmp_path):
         ("e4", "hasEducationalAlignment", "les-1", "ms-1", "Lesson",
          "StandardsFrameworkItem"),
         ("e5", "supports", "lc-1", "ca-1", "LearningComponent", "StandardsFrameworkItem"),
+        # components hang off the lettered child, not the parent standard
+        ("e6", "hasChild", "ms-ela", "ms-ela-e", "StandardsFrameworkItem",
+         "StandardsFrameworkItem"),
+        ("e7", "supports", "lc-adj", "ms-ela-e", "LearningComponent",
+         "StandardsFrameworkItem"),
+        ("e8", "hasStandardAlignment", "ca-ela", "ms-ela", "StandardsFrameworkItem",
+         "StandardsFrameworkItem"),
     ])
     for s in INDEXES:
         con.execute(s)
